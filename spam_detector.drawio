@@ -1,0 +1,91 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="페이지-1" id="yDhxoEpd2PvOGIBdKYYc">
+    <mxGraphModel dx="1542" dy="959" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="jqrhiBhl4NZMeAQxvySw-12" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;rounded=0;" value="&lt;h1 style=&quot;margin-top: 0px;&quot;&gt;외부 소스&lt;/h1&gt;&lt;p&gt;Google Gmail API를 통해 Gmail 접근&amp;nbsp;&lt;br&gt;&lt;/p&gt;&lt;p&gt;모델을 통해 메일을 읽어 스팸 메일 판별&lt;br&gt;&lt;/p&gt;" vertex="1">
+          <mxGeometry height="120" width="210" x="40" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="jqrhiBhl4NZMeAQxvySw-6" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="139.5" y="250" as="sourcePoint" />
+            <mxPoint x="140" y="310" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="jqrhiBhl4NZMeAQxvySw-7" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=light-dark(#FFFFFF,#CCE5FF);fillStyle=auto;" value="완성된 ML Model" vertex="1">
+          <mxGeometry height="80" width="120" x="80" y="480" as="geometry" />
+        </mxCell>
+        <mxCell id="jqrhiBhl4NZMeAQxvySw-8" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="예측 결과" vertex="1">
+          <mxGeometry height="80" width="120" x="280" y="480" as="geometry" />
+        </mxCell>
+        <mxCell id="jqrhiBhl4NZMeAQxvySw-9" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=light-dark(#FFFFFF,#3498DB);" value="Gmail API" vertex="1">
+          <mxGeometry height="80" width="120" x="80" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="jqrhiBhl4NZMeAQxvySw-13" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="MYSQL DB" vertex="1">
+          <mxGeometry height="80" width="120" x="280" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="jqrhiBhl4NZMeAQxvySw-15" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="서비스 앱" vertex="1">
+          <mxGeometry height="80" width="120" x="480" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="jqrhiBhl4NZMeAQxvySw-16" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <Array as="points">
+              <mxPoint x="440" y="280" />
+            </Array>
+            <mxPoint x="410" y="310" as="sourcePoint" />
+            <mxPoint x="470" y="250" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="jqrhiBhl4NZMeAQxvySw-18" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="유저 설정" vertex="1">
+          <mxGeometry height="80" width="120" x="480" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="jqrhiBhl4NZMeAQxvySw-19" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="539.5" y="250" as="sourcePoint" />
+            <mxPoint x="540" y="310" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="jqrhiBhl4NZMeAQxvySw-23" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=light-dark(#FFFFFF,#CCE5FF);fillStyle=auto;" value="데이터 전처리" vertex="1">
+          <mxGeometry height="80" width="120" x="80" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="jqrhiBhl4NZMeAQxvySw-24" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=light-dark(#FFFFFF,#CCE5FF);fillStyle=auto;" value="학습용 데이터 입력" vertex="1">
+          <mxGeometry height="80" width="120" x="80" y="800" as="geometry" />
+        </mxCell>
+        <mxCell id="jqrhiBhl4NZMeAQxvySw-25" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="139.5" y="410" as="sourcePoint" />
+            <mxPoint x="140" y="470" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="jqrhiBhl4NZMeAQxvySw-26" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="140" y="630" as="sourcePoint" />
+            <mxPoint x="139.5" y="570" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="jqrhiBhl4NZMeAQxvySw-27" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="210" y="520" as="sourcePoint" />
+            <mxPoint x="270" y="520" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="jqrhiBhl4NZMeAQxvySw-29" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=light-dark(#FFFFFF,#CCE5FF);fillStyle=auto;" value="ML Model" vertex="1">
+          <mxGeometry height="80" width="120" x="80" y="640" as="geometry" />
+        </mxCell>
+        <mxCell id="jqrhiBhl4NZMeAQxvySw-30" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="340" y="470" as="sourcePoint" />
+            <mxPoint x="339.5" y="410" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="jqrhiBhl4NZMeAQxvySw-31" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="140" y="790" as="sourcePoint" />
+            <mxPoint x="139.5" y="730" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

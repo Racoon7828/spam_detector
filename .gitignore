@@ -1,0 +1,28 @@
+# 가상환경
+.venv/
+venv/
+
+# 파이썬 캐시
+__pycache__/
+*.py[cod]
+
+# 설정 (비밀정보 포함)
+config/config.py
+
+# 학습 데이터 / 모델 산출물
+data/*.csv
+data/*.txt
+models/*.pt
+models/*.pth
+models/*.pkl
+
+# 로그
+*.log
+
+# OS
+Thumbs.db
+.DS_Store
+
+# 기타
+Agent.md
+Claude.md

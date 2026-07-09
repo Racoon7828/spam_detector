@@ -1,0 +1,23 @@
+# --- Deep Learning ---
+torch>=2.5.0            # Python 3.13 지원 (TensorFlow 대신 사용)
+
+# --- Data / Preprocessing ---
+numpy>=1.26
+pandas>=2.2
+scikit-learn>=1.5      # train/test split, 평가지표(F1 등)
+
+# --- 시각화 / 노트북 (EDA) ---
+matplotlib>=3.8        # 분포/길이/혼동행렬 시각화 (한글: Malgun Gothic)
+jupyter>=1.0           # ipynb 실행
+
+# --- Database ---
+PyMySQL>=1.1           # MySQL 드라이버 (순수 파이썬, 설치 간편)
+SQLAlchemy>=2.0        # (선택) ORM/커넥션 관리
+
+# --- Desktop GUI (트레이 상주형 메모창) ---
+customtkinter>=5.2     # 모던 tkinter 위젯
+pystray>=0.19          # 시스템 트레이 아이콘/메뉴
+
+# --- (선택) Gmail 연동 시 ---
+# google-api-python-client>=2.0
+# google-auth-oauthlib>=1.2
