@@ -8,9 +8,12 @@ __pycache__/
 
 # 설정 (비밀정보 포함)
 config/config.py
+config/credentials.json
+config/token.json
 
 # 학습 데이터 / 모델 산출물
 data/*.csv
+data/**/*.csv
 data/*.txt
 models/*.pt
 models/*.pth
@@ -26,3 +29,4 @@ Thumbs.db
 # 기타
 Agent.md
 Claude.md
+SPEC.md

@@ -37,6 +37,20 @@ def main():
             cur.execute(st)
     conn.commit()
 
+    # --- 마이그레이션: 기존 messages 테이블에 gmail_id 없으면 추가 ---
+    with conn.cursor() as cur:
+        cur.execute("USE spam_detector")
+        cur.execute(
+            "SELECT COUNT(*) FROM information_schema.columns "
+            "WHERE table_schema='spam_detector' AND table_name='messages' "
+            "AND column_name='gmail_id'"
+        )
+        if cur.fetchone()[0] == 0:
+            cur.execute("ALTER TABLE messages ADD COLUMN gmail_id VARCHAR(255) DEFAULT NULL")
+            cur.execute("ALTER TABLE messages ADD UNIQUE KEY uq_gmail (gmail_id)")
+            print("마이그레이션: messages.gmail_id 추가")
+    conn.commit()
+
     # 결과 확인
     with conn.cursor() as cur:
         cur.execute("USE spam_detector")

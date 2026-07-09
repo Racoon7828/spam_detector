@@ -4,6 +4,19 @@
 
 ### 2026-07-09
 
+#### Added (Planner — Gmail 연동 백엔드, 읽기전용)
+- `src/gmail_service.py` : OAuth2 인증(token 캐시) + `fetch_recent(n)` — 제목/발신/본문/**첨부파일명**/gmail_id 추출(MIME 디코딩)
+- `src/gmail_pipeline.py` : 가져오기 → `predict_email_tier` 판정 → DB 저장(source='gmail', gmail_id 중복 방지)
+- `db_schema.sql` + `init_db.py` : `messages.gmail_id` 컬럼 + 마이그레이션(기존 테이블 자동 추가)
+- `database.py` : `save_prediction(gmail_id=...)`, `existing_gmail_ids()` 추가
+- `config.py` : `GMAIL_CREDENTIALS_PATH/TOKEN_PATH/FETCH_COUNT`. `.gitignore` : credentials.json/token.json 제외
+- `requirements.txt` : google-api-python-client / auth-oauthlib / auth-httplib2 (설치 완료)
+- 검증: import·스키마 마이그레이션 OK. **실연동 성공** — credentials.json 인증 후 실제 메일 20건 가져와 판정·저장 확인
+  - 실측 관찰: 영어 메일(Notion/Roboflow/Kaggle) 전부 스팸 오판 → **영어 모델 필요성 실증**.
+    일부 한국어 알림(클래스룸)은 피드백 루프로 교정 가능
+- 안전: 스코프 `gmail.readonly`, 첨부파일명은 기능2(확장자 신호)와 연결
+- SPEC.md 최신화: 기능상태(9a완료/9b·9c예정)·모듈맵·API·Designer 할일(가져오기 버튼) 반영
+
 #### Added (Planner — 협업 명세서)
 - `SPEC.md` : 완성본 기준 기능·아키텍처·데이터흐름·**백엔드 API 계약**·DB스키마·
   데이터셋 구조·미완(Gmail/영어모델)·**에이전트별 할 일**(Designer/Reviewer/Planner) 정리

@@ -13,13 +13,15 @@ USE spam_detector;
 CREATE TABLE IF NOT EXISTS messages (
     id            INT AUTO_INCREMENT PRIMARY KEY,
     source        VARCHAR(50)  DEFAULT 'manual',   -- 'manual', 'gmail', 'import' 등
+    gmail_id      VARCHAR(255) DEFAULT NULL,        -- Gmail 메시지 ID (중복 방지·조치용)
     sender        VARCHAR(255),                     -- 발신자 (있으면)
     content       TEXT         NOT NULL,            -- 메시지 본문
-    predicted_label ENUM('ham','spam') NOT NULL,    -- 예측 결과
+    predicted_label ENUM('ham','spam') NOT NULL,    -- 예측 결과 (표시는 3단계, 저장은 이진)
     spam_prob     FLOAT        NOT NULL,            -- 스팸 확률 (0.0 ~ 1.0)
     model_version VARCHAR(50)  DEFAULT 'v1',
     created_at    TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
 
+    UNIQUE KEY uq_gmail (gmail_id),                 -- 같은 Gmail 메일 중복 저장 방지
     INDEX idx_label (predicted_label),
     INDEX idx_created (created_at)
 );

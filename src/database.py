@@ -27,19 +27,32 @@ def get_connection():
 
 
 def save_prediction(content, predicted_label, spam_prob,
-                    sender=None, source="manual", model_version="v1"):
-    """한 건의 예측 결과를 messages 테이블에 저장."""
+                    sender=None, source="manual", model_version="v1",
+                    gmail_id=None):
+    """한 건의 예측 결과를 messages 테이블에 저장. (gmail_id 있으면 중복 무시)"""
     sql = """
         INSERT INTO messages
-            (source, sender, content, predicted_label, spam_prob, model_version)
-        VALUES (%s, %s, %s, %s, %s, %s)
+            (source, gmail_id, sender, content, predicted_label, spam_prob, model_version)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
     """
     conn = get_connection()
     try:
         with conn.cursor() as cur:
-            cur.execute(sql, (source, sender, content,
+            cur.execute(sql, (source, gmail_id, sender, content,
                               predicted_label, spam_prob, model_version))
         conn.commit()
+    finally:
+        conn.close()
+
+
+def existing_gmail_ids():
+    """이미 저장된 Gmail 메시지 ID 집합 (중복 저장 방지용)."""
+    sql = "SELECT gmail_id FROM messages WHERE gmail_id IS NOT NULL"
+    conn = get_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(sql)
+            return {row["gmail_id"] for row in cur.fetchall()}
     finally:
         conn.close()
 

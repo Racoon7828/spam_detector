@@ -32,4 +32,10 @@ SPAM_THRESHOLD = 0.5   # 이진 판정(predict) 기준
 
 # --- 3단계 판정 임계값 (predict_tier) ---
 REVIEW_LOW = 0.4       # 이 미만 = 정상(ham)
-SPAM_HIGH = 0.7        # 이 이상 = 스팸(spam), 사이 = 검토 필요(review)                     # 이 값 이상이면 spam 으로 판정
+SPAM_HIGH = 0.7        # 이 이상 = 스팸(spam), 사이 = 검토 필요(review)
+
+# --- Gmail 연동 (읽기 전용) ---
+# Google Cloud Console에서 OAuth 클라이언트(데스크톱) 만들어 credentials.json 을 config/ 에 넣으세요.
+GMAIL_CREDENTIALS_PATH = os.path.join(_ROOT, "config", "credentials.json")
+GMAIL_TOKEN_PATH = os.path.join(_ROOT, "config", "token.json")   # 첫 인증 후 자동 생성
+GMAIL_FETCH_COUNT = 20                     # 이 값 이상이면 spam 으로 판정
