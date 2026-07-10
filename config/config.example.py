@@ -38,4 +38,5 @@ SPAM_HIGH = 0.7        # 이 이상 = 스팸(spam), 사이 = 검토 필요(revie
 # Google Cloud Console에서 OAuth 클라이언트(데스크톱) 만들어 credentials.json 을 config/ 에 넣으세요.
 GMAIL_CREDENTIALS_PATH = os.path.join(_ROOT, "config", "credentials.json")
 GMAIL_TOKEN_PATH = os.path.join(_ROOT, "config", "token.json")   # 첫 인증 후 자동 생성
-GMAIL_FETCH_COUNT = 20                     # 이 값 이상이면 spam 으로 판정
+GMAIL_FETCH_COUNT = 100   # 가져올 메일 수 (많을수록 느려짐)
+GMAIL_PAGE_SIZE = 10      # 목록 한 페이지 표시 개수                     # 이 값 이상이면 spam 으로 판정

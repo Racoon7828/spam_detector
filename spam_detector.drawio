@@ -1,88 +1,110 @@
 <mxfile host="app.diagrams.net">
-  <diagram name="페이지-1" id="yDhxoEpd2PvOGIBdKYYc">
-    <mxGraphModel dx="1542" dy="959" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+  <diagram name="전체 구조도(Planner)" id="arch_full_planner">
+    <mxGraphModel dx="1542" dy="959" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-        <mxCell id="jqrhiBhl4NZMeAQxvySw-12" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;rounded=0;" value="&lt;h1 style=&quot;margin-top: 0px;&quot;&gt;외부 소스&lt;/h1&gt;&lt;p&gt;Google Gmail API를 통해 Gmail 접근&amp;nbsp;&lt;br&gt;&lt;/p&gt;&lt;p&gt;모델을 통해 메일을 읽어 스팸 메일 판별&lt;br&gt;&lt;/p&gt;" vertex="1">
-          <mxGeometry height="120" width="210" x="40" y="40" as="geometry" />
+        <mxCell id="tt" parent="1" style="text;html=1;fontSize=18;fontStyle=1;" value="Spam Detector — 전체 구조도" vertex="1">
+          <mxGeometry height="30" width="420" x="40" y="20" as="geometry" />
         </mxCell>
-        <mxCell id="jqrhiBhl4NZMeAQxvySw-6" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;" value="">
-          <mxGeometry height="50" relative="1" width="50" as="geometry">
-            <mxPoint x="139.5" y="250" as="sourcePoint" />
-            <mxPoint x="140" y="310" as="targetPoint" />
+        <mxCell id="c_in" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="① 입력&#xa;수동 4필드 · Gmail 가져오기" vertex="1">
+          <mxGeometry height="50" width="210" x="309" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="c_pre" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="② 전처리&#xa;compose_email · 글자단위 토큰화" vertex="1">
+          <mxGeometry height="50" width="210" x="309" y="150" as="geometry" />
+        </mxCell>
+        <mxCell id="c_model" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="③ 양방향 LSTM (한국어)&#xa;F1 0.968" vertex="1">
+          <mxGeometry height="50" width="210" x="309" y="230" as="geometry" />
+        </mxCell>
+        <mxCell id="c_rule" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" value="&amp;nbsp;신뢰 발신자 allowlist&lt;br&gt;(규칙: 모델보다 우선 → 정상)" vertex="1">
+          <mxGeometry height="50" width="200" x="40" y="325" as="geometry" />
+        </mxCell>
+        <mxCell id="c_decide" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" value="④ 3단계 판정&lt;br&gt;스팸 | 검토 | 정상" vertex="1">
+          <mxGeometry height="60" width="210" x="309" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="c_dbh" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;" value="⑤ MySQL  (spam_detector)" vertex="1">
+          <mxGeometry height="34" width="210" x="309" y="430" as="geometry" />
+        </mxCell>
+        <mxCell id="c_db1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" value="messages" vertex="1">
+          <mxGeometry height="30" width="100" x="309" y="468" as="geometry" />
+        </mxCell>
+        <mxCell id="c_db2" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" value="training_runs" vertex="1">
+          <mxGeometry height="30" width="100" x="419" y="468" as="geometry" />
+        </mxCell>
+        <mxCell id="c_db3" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" value="user_reports" vertex="1">
+          <mxGeometry height="30" width="100" x="309" y="502" as="geometry" />
+        </mxCell>
+        <mxCell id="c_db4" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" value="trusted_senders" vertex="1">
+          <mxGeometry height="30" width="100" x="419" y="502" as="geometry" />
+        </mxCell>
+        <mxCell id="c_app" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" value="데스크탑 앱 (트레이 상주)&lt;br&gt;홈 · 기록 · Gmail · 신뢰발신자&lt;br&gt;3단계 색상 표시 / 통계" vertex="1">
+          <mxGeometry height="120" width="230" x="565" y="147" as="geometry" />
+        </mxCell>
+        <mxCell id="c_gact" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" value="Gmail 조치 (사용자 확인)&#xa;🗑️ 삭제  🚫 스팸  ✅ 스팸아님&#xa;→ 휴지통/스팸함, 목록서 숨김" vertex="1">
+          <mxGeometry height="90" width="230" x="565" y="461" as="geometry" />
+        </mxCell>
+        <mxCell id="c_tdata" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="학습 데이터&#xa;실(지자체·우체국) + 합성" vertex="1">
+          <mxGeometry height="50" width="180" x="40" y="640" as="geometry" />
+        </mxCell>
+        <mxCell id="c_tbuild" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="build_dataset.py&#xa;→ spam.csv" vertex="1">
+          <mxGeometry height="50" width="160" x="250" y="640" as="geometry" />
+        </mxCell>
+        <mxCell id="c_ttrain" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="train.py&#xa;(+ user_reports ×5)" vertex="1">
+          <mxGeometry height="50" width="190" x="440" y="640" as="geometry" />
+        </mxCell>
+        <mxCell id="lg" parent="1" style="text;html=1;fontSize=11;fontColor=#555555;" value="색상: 파랑=입력 · 초록=처리/학습 · 주황=규칙 · 노랑=판정 · 빨강=DB · 보라=앱" vertex="1">
+          <mxGeometry height="20" width="375" x="420" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" edge="1" parent="1" source="c_in" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;" target="c_pre">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" edge="1" parent="1" source="c_pre" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;" target="c_model">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" edge="1" parent="1" source="c_model" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;" target="c_decide">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" edge="1" parent="1" source="c_rule" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;dashed=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="c_decide" value="override">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="459" y="161" as="sourcePoint" />
+            <mxPoint x="304" y="226" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="jqrhiBhl4NZMeAQxvySw-7" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=light-dark(#FFFFFF,#CCE5FF);fillStyle=auto;" value="완성된 ML Model" vertex="1">
-          <mxGeometry height="80" width="120" x="80" y="480" as="geometry" />
+        <mxCell id="e5" edge="1" parent="1" source="c_decide" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;" target="c_dbh" value="저장">
+          <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="jqrhiBhl4NZMeAQxvySw-8" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="예측 결과" vertex="1">
-          <mxGeometry height="80" width="120" x="280" y="480" as="geometry" />
+        <mxCell id="e6" edge="1" parent="1" source="c_dbh" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;dashed=1;entryX=0.25;entryY=1;entryDx=0;entryDy=0;" target="c_app" value="조회">
+          <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="jqrhiBhl4NZMeAQxvySw-9" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=light-dark(#FFFFFF,#3498DB);" value="Gmail API" vertex="1">
-          <mxGeometry height="80" width="120" x="80" y="160" as="geometry" />
+        <mxCell id="e7" edge="1" parent="1" source="c_app" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;" target="c_gact">
+          <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="jqrhiBhl4NZMeAQxvySw-13" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="MYSQL DB" vertex="1">
-          <mxGeometry height="80" width="120" x="280" y="320" as="geometry" />
-        </mxCell>
-        <mxCell id="jqrhiBhl4NZMeAQxvySw-15" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="서비스 앱" vertex="1">
-          <mxGeometry height="80" width="120" x="480" y="160" as="geometry" />
-        </mxCell>
-        <mxCell id="jqrhiBhl4NZMeAQxvySw-16" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;" value="">
-          <mxGeometry height="50" relative="1" width="50" as="geometry">
+        <mxCell id="e8" edge="1" parent="1" source="c_gact" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;dashed=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" target="c_tdata" value="actioned">
+          <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="440" y="280" />
+              <mxPoint x="680" y="729" />
+              <mxPoint x="130" y="729" />
             </Array>
-            <mxPoint x="410" y="310" as="sourcePoint" />
-            <mxPoint x="470" y="250" as="targetPoint" />
+            <mxPoint x="114" y="712" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="jqrhiBhl4NZMeAQxvySw-18" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="유저 설정" vertex="1">
-          <mxGeometry height="80" width="120" x="480" y="320" as="geometry" />
-        </mxCell>
-        <mxCell id="jqrhiBhl4NZMeAQxvySw-19" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;" value="">
-          <mxGeometry height="50" relative="1" width="50" as="geometry">
-            <mxPoint x="539.5" y="250" as="sourcePoint" />
-            <mxPoint x="540" y="310" as="targetPoint" />
+        <mxCell id="e9" edge="1" parent="1" source="c_db3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;dashed=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.25;entryY=0;entryDx=0;entryDy=0;" target="c_ttrain" value="피드백">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="456" y="632" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="jqrhiBhl4NZMeAQxvySw-23" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=light-dark(#FFFFFF,#CCE5FF);fillStyle=auto;" value="데이터 전처리" vertex="1">
-          <mxGeometry height="80" width="120" x="80" y="320" as="geometry" />
+        <mxCell id="e10" edge="1" parent="1" source="c_tdata" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;" target="c_tbuild">
+          <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="jqrhiBhl4NZMeAQxvySw-24" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=light-dark(#FFFFFF,#CCE5FF);fillStyle=auto;" value="학습용 데이터 입력" vertex="1">
-          <mxGeometry height="80" width="120" x="80" y="800" as="geometry" />
+        <mxCell id="e11" edge="1" parent="1" source="c_tbuild" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;" target="c_ttrain">
+          <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="jqrhiBhl4NZMeAQxvySw-25" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;" value="">
-          <mxGeometry height="50" relative="1" width="50" as="geometry">
-            <mxPoint x="139.5" y="410" as="sourcePoint" />
-            <mxPoint x="140" y="470" as="targetPoint" />
-          </mxGeometry>
+        <mxCell id="e12" edge="1" parent="1" source="c_ttrain" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;dashed=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.75;entryY=0;entryDx=0;entryDy=0;" target="c_model" value="재학습">
+          <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="jqrhiBhl4NZMeAQxvySw-26" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;" value="">
-          <mxGeometry height="50" relative="1" width="50" as="geometry">
-            <mxPoint x="140" y="630" as="sourcePoint" />
-            <mxPoint x="139.5" y="570" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="jqrhiBhl4NZMeAQxvySw-27" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;" value="">
-          <mxGeometry height="50" relative="1" width="50" as="geometry">
-            <mxPoint x="210" y="520" as="sourcePoint" />
-            <mxPoint x="270" y="520" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="jqrhiBhl4NZMeAQxvySw-29" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=light-dark(#FFFFFF,#CCE5FF);fillStyle=auto;" value="ML Model" vertex="1">
-          <mxGeometry height="80" width="120" x="80" y="640" as="geometry" />
-        </mxCell>
-        <mxCell id="jqrhiBhl4NZMeAQxvySw-30" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;" value="">
-          <mxGeometry height="50" relative="1" width="50" as="geometry">
-            <mxPoint x="340" y="470" as="sourcePoint" />
-            <mxPoint x="339.5" y="410" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="jqrhiBhl4NZMeAQxvySw-31" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;" value="">
-          <mxGeometry height="50" relative="1" width="50" as="geometry">
-            <mxPoint x="140" y="790" as="sourcePoint" />
-            <mxPoint x="139.5" y="730" as="targetPoint" />
+        <mxCell id="e13" edge="1" parent="1" source="c_ttrain" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;dashed=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;exitX=0.75;exitY=0;exitDx=0;exitDy=0;" target="c_db2" value="성능기록">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="627" y="613" as="sourcePoint" />
           </mxGeometry>
         </mxCell>
       </root>

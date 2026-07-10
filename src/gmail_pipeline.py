@@ -31,7 +31,11 @@ def run(n=None):
         _, prob = predictor.predict_email_tier(
             subject=e["subject"], sender=e["sender"],
             body=e["body"], attachment=e["attachment"])
-        label = "spam" if prob >= SPAM_THRESHOLD else "ham"   # DB는 이진
+        # 신뢰 발신자면 모델과 무관하게 정상 처리 (allowlist 규칙 우선)
+        if database.is_trusted(e["sender"]):
+            label, prob = "ham", 0.0
+        else:
+            label = "spam" if prob >= SPAM_THRESHOLD else "ham"   # DB는 이진
         content = f"{e['subject']} {e['body']}".strip()[:5000]
         database.save_prediction(
             content=content, predicted_label=label, spam_prob=prob,
@@ -39,6 +43,25 @@ def run(n=None):
             model_version=MODEL_VERSION, gmail_id=e["gmail_id"])
         saved += 1
     return saved, len(emails)
+
+
+def mark_not_spam(gmail_ids):
+    """선택 메일을 '스팸 아님'으로 처리:
+      (1) 정상(ham) 피드백 등록 -> 재학습에 반영 (모델 학습)
+      (2) Gmail 에서 스팸 아님 처리 (스팸함이면 받은편지함 복귀)
+    반환: (피드백 등록 건수, Gmail 처리 성공 건수)
+    """
+    from src import database
+    from src.gmail_service import apply_action
+
+    reported = 0
+    for gid in gmail_ids:
+        content = database.get_content_by_gmail_id(gid)
+        if content:
+            database.save_report(content, "ham", note="gmail_not_spam")
+            reported += 1
+    ok, _ = apply_action(gmail_ids, "not_spam")
+    return reported, ok
 
 
 if __name__ == "__main__":

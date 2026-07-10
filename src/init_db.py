@@ -49,6 +49,15 @@ def main():
             cur.execute("ALTER TABLE messages ADD COLUMN gmail_id VARCHAR(255) DEFAULT NULL")
             cur.execute("ALTER TABLE messages ADD UNIQUE KEY uq_gmail (gmail_id)")
             print("마이그레이션: messages.gmail_id 추가")
+        # actioned 컬럼 (사용자 조치 완료 -> Gmail 목록에서 숨김)
+        cur.execute(
+            "SELECT COUNT(*) FROM information_schema.columns "
+            "WHERE table_schema='spam_detector' AND table_name='messages' "
+            "AND column_name='actioned'"
+        )
+        if cur.fetchone()[0] == 0:
+            cur.execute("ALTER TABLE messages ADD COLUMN actioned TINYINT(1) DEFAULT 0")
+            print("마이그레이션: messages.actioned 추가")
     conn.commit()
 
     # 결과 확인

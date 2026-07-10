@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS messages (
     predicted_label ENUM('ham','spam') NOT NULL,    -- 예측 결과 (표시는 3단계, 저장은 이진)
     spam_prob     FLOAT        NOT NULL,            -- 스팸 확률 (0.0 ~ 1.0)
     model_version VARCHAR(50)  DEFAULT 'v1',
+    actioned      TINYINT(1)   DEFAULT 0,           -- 사용자 조치 완료 여부 (Gmail 목록에서 숨김)
     created_at    TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
 
     UNIQUE KEY uq_gmail (gmail_id),                 -- 같은 Gmail 메일 중복 저장 방지
@@ -45,5 +46,13 @@ CREATE TABLE IF NOT EXISTS user_reports (
     content    TEXT NOT NULL,                    -- 등록한 메시지 본문
     user_label ENUM('ham','spam') NOT NULL,      -- 사용자가 지정한 정답
     note       VARCHAR(255),                     -- 메모(선택)
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 4) 신뢰 발신자 (allowlist) — 이 발신자는 모델과 무관하게 정상 처리
+CREATE TABLE IF NOT EXISTS trusted_senders (
+    id         INT AUTO_INCREMENT PRIMARY KEY,
+    pattern    VARCHAR(255) NOT NULL UNIQUE,     -- 이메일주소 또는 도메인 (소문자)
+    note       VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
