@@ -58,6 +58,19 @@ def main():
         if cur.fetchone()[0] == 0:
             cur.execute("ALTER TABLE messages ADD COLUMN actioned TINYINT(1) DEFAULT 0")
             print("마이그레이션: messages.actioned 추가")
+        # predicted_label 에 'review' 없으면 3단계 ENUM으로 확장 (Reviewer 지적: 이진저장-3단계표시 불일치)
+        cur.execute(
+            "SELECT COLUMN_TYPE FROM information_schema.columns "
+            "WHERE table_schema='spam_detector' AND table_name='messages' "
+            "AND column_name='predicted_label'"
+        )
+        col_type = cur.fetchone()[0]
+        if "review" not in col_type:
+            cur.execute(
+                "ALTER TABLE messages MODIFY predicted_label "
+                "ENUM('ham','review','spam') NOT NULL"
+            )
+            print("마이그레이션: messages.predicted_label 에 'review' 추가(3단계)")
     conn.commit()
 
     # 결과 확인

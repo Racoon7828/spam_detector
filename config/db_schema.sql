@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS messages (
     gmail_id      VARCHAR(255) DEFAULT NULL,        -- Gmail 메시지 ID (중복 방지·조치용)
     sender        VARCHAR(255),                     -- 발신자 (있으면)
     content       TEXT         NOT NULL,            -- 메시지 본문
-    predicted_label ENUM('ham','spam') NOT NULL,    -- 예측 결과 (표시는 3단계, 저장은 이진)
+    predicted_label ENUM('ham','review','spam') NOT NULL,  -- 3단계 판정 그대로 저장(화면 표시와 일치)
     spam_prob     FLOAT        NOT NULL,            -- 스팸 확률 (0.0 ~ 1.0)
     model_version VARCHAR(50)  DEFAULT 'v1',
     actioned      TINYINT(1)   DEFAULT 0,           -- 사용자 조치 완료 여부 (Gmail 목록에서 숨김)

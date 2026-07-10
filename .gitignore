@@ -5,6 +5,7 @@ venv/
 # 파이썬 캐시
 __pycache__/
 *.py[cod]
+.pytest_cache/
 
 # 설정 (비밀정보 포함)
 config/config.py
@@ -18,9 +19,15 @@ data/*.txt
 models/*.pt
 models/*.pth
 models/*.pkl
+models/*.json
+models/backups/
 
 # 로그
 *.log
+
+# PyInstaller 빌드 산출물 (build.spec 으로 재생성 가능)
+build/
+dist/
 
 # OS
 Thumbs.db

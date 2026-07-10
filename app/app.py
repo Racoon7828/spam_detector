@@ -4,8 +4,8 @@ Spam Detector - 트레이 상주형 다크 카드 UI 데스크탑 앱.
 기능:
 - 트레이 아이콘으로 상주, 더블클릭/메뉴로 커스텀 다크 창 토글
 - 좌측 사이드바로 홈(판정)/기록/Gmail 3개 페이지 전환
-- 이메일 4필드(제목/발신자/본문/첨부) 입력 -> 3단계 판정(🔴스팸/🟡검토/🟢정상) -> MySQL(messages) 저장
-- 🚫 스팸 / ✅ 정상 으로 사용자 직접 등록(user_reports) -> 재학습용 피드백
+- 이메일 4필드(제목/발신자/본문/첨부) 입력 -> 3단계 판정(스팸/검토/정상) -> MySQL(messages) 저장
+- 스팸 / 정상 으로 사용자 직접 등록(user_reports) -> 재학습용 피드백
 - "기록" 페이지 -> 최근 판정 이력/통계
 - "Gmail" 페이지 -> 최근 메일 가져와 판정·저장 (최초 1회 브라우저 인증 필요)
 - 트레이 메뉴 "데모 시연" -> 데모 샘플(demo_samples.csv)로 성능 시연
@@ -27,6 +27,7 @@ from PIL import Image, ImageDraw, ImageTk
 import pandas as pd
 
 from src.predict import SpamPredictor
+from src.predict_router import predict_email_tier_auto
 from src import database
 from config.config import DEMO_PATH, SPAM_THRESHOLD, GMAIL_PAGE_SIZE
 
@@ -57,12 +58,31 @@ COLOR_HAM_TEXT, COLOR_HAM_BG = "#4cd97b", "#1c3327"
 COLOR_NEUTRAL_TEXT, COLOR_NEUTRAL_BG = TEXT_MUTED, CARD_BG_ALT
 COLOR_INFO_TEXT = ACCENT
 
-# tier('spam'|'review'|'ham') -> (표시 문구, 글자색, 배경색)  SPEC.md 7장 색 매핑
+# tier('spam'|'review'|'ham') -> (표시 문구, 글자색, 배경색)  SPEC.md 7장 색 매핑 (● = 색 도트, 아이콘 대신 색으로 구분)
 TIER_DISPLAY = {
-    "spam": ("🔴 스팸", COLOR_SPAM_TEXT, COLOR_SPAM_BG),
-    "review": ("🟡 검토 필요", COLOR_REVIEW_TEXT, COLOR_REVIEW_BG),
-    "ham": ("🟢 정상", COLOR_HAM_TEXT, COLOR_HAM_BG),
+    "spam": ("● 스팸", COLOR_SPAM_TEXT, COLOR_SPAM_BG),
+    "review": ("● 검토 필요", COLOR_REVIEW_TEXT, COLOR_REVIEW_BG),
+    "ham": ("● 정상", COLOR_HAM_TEXT, COLOR_HAM_BG),
 }
+
+ICON_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "img")
+
+GMAIL_FILTER_MAP = {"스팸": "spam", "정상": "ham", "전체": None}
+
+
+def _hex_to_rgb(hex_color):
+    hex_color = hex_color.lstrip("#")
+    return tuple(int(hex_color[i:i + 2], 16) for i in (0, 2, 4))
+
+
+def load_icon(filename, color, size=20):
+    """data/img 의 단색 실루엣 PNG(투명배경)을 지정 색으로 재색상 처리해 CTkImage 로 반환."""
+    img = Image.open(os.path.join(ICON_DIR, filename)).convert("RGBA")
+    alpha = img.split()[3]
+    solid = Image.new("RGBA", img.size, _hex_to_rgb(color) + (0,))
+    solid.putalpha(alpha)
+    solid = solid.resize((size, size), Image.LANCZOS)
+    return ctk.CTkImage(light_image=solid, dark_image=solid, size=(size, size))
 
 
 def make_tray_image():
@@ -90,6 +110,7 @@ class SpamDetectorApp:
         self.active_page = None
         self._gmail_importing = False
         self.gmail_page = 0
+        self.gmail_label_filter = "spam"
         self._drag_x = 0
         self._drag_y = 0
 
@@ -133,17 +154,21 @@ class SpamDetectorApp:
         titlebar.grid(row=0, column=0, columnspan=2, sticky="ew")
         titlebar.pack_propagate(False)
 
-        label = ctk.CTkLabel(titlebar, text="📧 Spam Detector", font=FONT, text_color=TEXT)
-        label.pack(side="left", padx=14)
+        icon_lbl = ctk.CTkLabel(titlebar, image=load_icon("gmail_683155.png", ACCENT, 18), text="")
+        icon_lbl.pack(side="left", padx=(14, 6))
+        label = ctk.CTkLabel(titlebar, text="Spam Detector", font=FONT, text_color=TEXT)
+        label.pack(side="left")
 
-        ctk.CTkButton(titlebar, text="✕", width=32, height=28, corner_radius=6,
-                      fg_color="transparent", hover_color=COLOR_SPAM_BG, text_color=TEXT_MUTED,
+        ctk.CTkButton(titlebar, image=load_icon("cancel_8532373.png", TEXT_MUTED, 12),
+                      text="", width=32, height=28, corner_radius=6,
+                      fg_color="transparent", hover_color=COLOR_SPAM_BG,
                       command=self.hide_main).pack(side="right", padx=(0, 8), pady=6)
-        ctk.CTkButton(titlebar, text="─", width=32, height=28, corner_radius=6,
-                      fg_color="transparent", hover_color=CARD_BG_ALT, text_color=TEXT_MUTED,
+        ctk.CTkButton(titlebar, image=load_icon("minimise_11450898.png", TEXT_MUTED, 12),
+                      text="", width=32, height=28, corner_radius=6,
+                      fg_color="transparent", hover_color=CARD_BG_ALT,
                       command=self.hide_main).pack(side="right", padx=0, pady=6)
 
-        for widget in (titlebar, label):
+        for widget in (titlebar, icon_lbl, label):
             widget.bind("<ButtonPress-1>", self._start_move)
             widget.bind("<B1-Motion>", self._do_move)
 
@@ -162,11 +187,22 @@ class SpamDetectorApp:
         sidebar.grid(row=1, column=0, sticky="ns")
         sidebar.pack_propagate(False)
 
-        for i, (key, icon) in enumerate([("home", "🏠"), ("history", "📋"), ("gmail", "📥"), ("trusted", "⭐")]):
+        nav_items = [
+            ("home", "home-page_3405248.png"),
+            ("history", "list_151917.png"),
+            ("gmail", "gmail_683155.png"),
+            ("trusted", "favorite_17110228.png"),
+        ]
+        self.nav_icons = {}
+        for i, (key, filename) in enumerate(nav_items):
+            self.nav_icons[key] = {
+                "inactive": load_icon(filename, TEXT_MUTED, 18),
+                "active": load_icon(filename, TEXT, 18),
+            }
             btn = ctk.CTkButton(
-                sidebar, text=icon, width=36, height=36, corner_radius=8,
-                font=("Malgun Gothic", 14), fg_color="transparent",
-                text_color=TEXT_MUTED, hover_color=CARD_BG,
+                sidebar, image=self.nav_icons[key]["inactive"], text="",
+                width=36, height=36, corner_radius=8,
+                fg_color="transparent", hover_color=CARD_BG,
                 command=lambda k=key: self.show_page(k))
             btn.pack(pady=(16 if i == 0 else 6, 0))
             self.nav_buttons[key] = btn
@@ -200,7 +236,7 @@ class SpamDetectorApp:
         for key, btn in self.nav_buttons.items():
             active = key == name
             btn.configure(fg_color=(ACCENT if active else "transparent"),
-                          text_color=(TEXT if active else TEXT_MUTED))
+                          image=self.nav_icons[key]["active" if active else "inactive"])
         if name == "history":
             self._refresh_history()
         if name == "gmail":
@@ -215,7 +251,7 @@ class SpamDetectorApp:
         page = ctk.CTkFrame(parent, fg_color=BG)
 
         input_card = ctk.CTkFrame(page, fg_color=CARD_BG, corner_radius=14)
-        input_card.pack(fill="x", padx=16, pady=(16, 10))
+        input_card.pack(fill="both", expand=True, padx=16, pady=(16, 10))
 
         field_row = ctk.CTkFrame(input_card, fg_color="transparent")
         field_row.pack(fill="x", padx=14, pady=(14, 6))
@@ -229,14 +265,14 @@ class SpamDetectorApp:
 
         self.body_box = ctk.CTkTextbox(input_card, height=90, font=FONT_SMALL, corner_radius=10,
                                         fg_color=BG, text_color=TEXT)
-        self.body_box.pack(fill="x", padx=14, pady=6)
+        self.body_box.pack(fill="both", expand=True, padx=14, pady=6)
 
         self.attachment_entry = ctk.CTkEntry(
             input_card, placeholder_text="첨부파일명 (선택, 예: invoice.pdf)", font=FONT_SMALL,
             fg_color=BG, border_color=CARD_BG_ALT, text_color=TEXT)
         self.attachment_entry.pack(fill="x", padx=14, pady=(0, 6))
 
-        ctk.CTkButton(input_card, text="🔍 판정하기", height=42, corner_radius=10,
+        ctk.CTkButton(input_card, text="판정하기", height=42, corner_radius=10,
                       fg_color=ACCENT, hover_color=ACCENT_HOVER, font=FONT_BTN,
                       command=self.on_check).pack(fill="x", padx=14, pady=(6, 14))
 
@@ -250,10 +286,10 @@ class SpamDetectorApp:
 
         report_row = ctk.CTkFrame(result_card, fg_color="transparent")
         report_row.pack(fill="x", padx=14, pady=(0, 14))
-        ctk.CTkButton(report_row, text="🚫 스팸으로 등록", corner_radius=8,
+        ctk.CTkButton(report_row, text="스팸으로 등록", corner_radius=8,
                       fg_color=COLOR_SPAM_BG, text_color=COLOR_SPAM_TEXT, hover_color="#4a262c",
                       command=lambda: self.on_report("spam")).pack(side="left", expand=True, fill="x", padx=(0, 4))
-        ctk.CTkButton(report_row, text="✅ 정상으로 등록", corner_radius=8,
+        ctk.CTkButton(report_row, text="정상으로 등록", corner_radius=8,
                       fg_color=COLOR_HAM_BG, text_color=COLOR_HAM_TEXT, hover_color="#234030",
                       command=lambda: self.on_report("ham")).pack(side="left", expand=True, fill="x", padx=(4, 0))
 
@@ -263,8 +299,8 @@ class SpamDetectorApp:
         stats_row.pack(fill="x", padx=14, pady=14)
         stats_row.grid_columnconfigure((0, 1, 2), weight=1)
         self.stat_total_label = self._make_stat(stats_row, 0, "판정 건수")
-        self.stat_spam_label = self._make_stat(stats_row, 1, "🔴 스팸")
-        self.stat_ham_label = self._make_stat(stats_row, 2, "🟢 정상")
+        self.stat_spam_label = self._make_stat(stats_row, 1, "스팸")
+        self.stat_ham_label = self._make_stat(stats_row, 2, "정상")
 
         return page
 
@@ -362,22 +398,34 @@ class SpamDetectorApp:
 
         header_row = ctk.CTkFrame(list_card, fg_color="transparent")
         header_row.pack(fill="x", padx=14, pady=(14, 4))
-        ctk.CTkLabel(header_row, text="📥 가져온 메일 목록", font=FONT, text_color=TEXT).pack(side="left")
+        ctk.CTkLabel(header_row, text="가져온 메일 목록", font=FONT, text_color=TEXT).pack(side="left")
         self.gmail_select_all_var = ctk.BooleanVar(value=False)
         ctk.CTkCheckBox(header_row, text="전체 선택", variable=self.gmail_select_all_var,
                          command=self._toggle_select_all_gmail, font=FONT_SMALL,
                          text_color=TEXT_MUTED, fg_color=ACCENT, hover_color=ACCENT_HOVER,
                          border_color=CARD_BG_ALT).pack(side="right", padx=(0, 10))
-        ctk.CTkButton(header_row, text="↻ 가져오기", width=100, height=30, corner_radius=8,
+        ctk.CTkButton(header_row, text="가져오기", width=100, height=30, corner_radius=8,
                       fg_color=ACCENT, hover_color=ACCENT_HOVER, font=FONT_SMALL,
                       command=self.on_gmail_import).pack(side="right", padx=(0, 10))
 
+        filter_row = ctk.CTkFrame(list_card, fg_color="transparent")
+        filter_row.pack(fill="x", padx=18, pady=(0, 1))
+        self.gmail_filter_seg = ctk.CTkSegmentedButton(
+            filter_row, values=list(GMAIL_FILTER_MAP.keys()), command=self.on_gmail_filter_change,
+            width=280, height=38, fg_color=CARD_BG_ALT, selected_color=ACCENT,
+            selected_hover_color=ACCENT_HOVER, unselected_color=CARD_BG_ALT,
+            unselected_hover_color=CARD_BG, text_color=TEXT,
+            font=("Malgun Gothic", 13, "bold"))
+        self.gmail_filter_seg.set("스팸")
+        self.gmail_filter_seg.pack(side="left")
+
         self.gmail_status_label = ctk.CTkLabel(list_card, text="", font=FONT_SMALL,
-                                                text_color=TEXT_MUTED, wraplength=900, justify="left")
-        self.gmail_status_label.pack(anchor="w", padx=14, pady=(0, 4))
+                                                text_color=TEXT_MUTED, wraplength=900, justify="left",
+                                                height=1)
+        self.gmail_status_label.pack(anchor="w", padx=14, pady=(0, 0))
 
         self.gmail_list_frame = ctk.CTkScrollableFrame(list_card, fg_color=CARD_BG, height=300)
-        self.gmail_list_frame.pack(fill="both", expand=True, padx=10, pady=(4, 4))
+        self.gmail_list_frame.pack(fill="both", expand=True, padx=10, pady=(1, 4))
         self.gmail_checks = {}
 
         page_row = ctk.CTkFrame(list_card, fg_color="transparent")
@@ -401,13 +449,13 @@ class SpamDetectorApp:
         action_grid.grid_columnconfigure((0, 1, 2, 3), weight=1)
 
         buttons = [
-            ("🗑️ 삭제\n(휴지통, 복구가능)", COLOR_SPAM_BG, COLOR_SPAM_TEXT, "#4a262c",
+            ("삭제\n(휴지통, 복구가능)", COLOR_SPAM_BG, COLOR_SPAM_TEXT, "#4a262c",
              lambda: self.on_gmail_bulk_action("trash")),
-            ("🚫 스팸처리\n(스팸함으로)", COLOR_REVIEW_BG, COLOR_REVIEW_TEXT, "#4a4020",
+            ("스팸처리\n(스팸함으로)", COLOR_REVIEW_BG, COLOR_REVIEW_TEXT, "#4a4020",
              lambda: self.on_gmail_bulk_action("spam")),
-            ("✅ 스팸 아님\n(정상 처리, 복귀)", COLOR_HAM_BG, COLOR_HAM_TEXT, "#234030",
+            ("스팸 아님\n(정상 처리, 복귀)", COLOR_HAM_BG, COLOR_HAM_TEXT, "#234030",
              lambda: self.on_gmail_bulk_action("not_spam")),
-            ("⭐ 발신자 신뢰\n(항상 정상 처리)", CARD_BG_ALT, ACCENT, CARD_BG,
+            ("발신자 신뢰\n(항상 정상 처리)", CARD_BG_ALT, ACCENT, CARD_BG,
              self.on_gmail_trust_action),
         ]
         for col, (text, fg, tc, hover, cmd) in enumerate(buttons):
@@ -425,7 +473,7 @@ class SpamDetectorApp:
         self.gmail_select_all_var.set(False)
 
         try:
-            total = database.count_gmail_pending()
+            total = database.count_gmail_pending(label=self.gmail_label_filter)
         except Exception:
             total = 0
         total_pages = max(1, -(-total // GMAIL_PAGE_SIZE))  # 올림 나눗셈
@@ -433,7 +481,8 @@ class SpamDetectorApp:
 
         try:
             gmail_rows = database.fetch_gmail_pending(
-                GMAIL_PAGE_SIZE, self.gmail_page * GMAIL_PAGE_SIZE)   # 조치완료(actioned) 제외
+                GMAIL_PAGE_SIZE, self.gmail_page * GMAIL_PAGE_SIZE,
+                label=self.gmail_label_filter)   # 조치완료(actioned) 제외
         except Exception:
             gmail_rows = []
 
@@ -447,19 +496,37 @@ class SpamDetectorApp:
             return
 
         for r in gmail_rows:
-            tier_icon = "🔴" if r["predicted_label"] == "spam" else "🟢"
-            preview = self._title_preview(r["content"], limit=80)
+            tier_color = COLOR_SPAM_TEXT if r["predicted_label"] == "spam" else COLOR_HAM_TEXT
+            sender = self._title_preview(r["sender"] or "(발신자 없음)", limit=60)
+            preview = self._title_preview(r["content"], limit=200)
             var = ctk.BooleanVar(value=False)
-            ctk.CTkCheckBox(self.gmail_list_frame, text=f"{tier_icon} {preview}", variable=var,
-                             font=FONT_SMALL, text_color=TEXT, fg_color=ACCENT,
-                             hover_color=ACCENT_HOVER, border_color=CARD_BG_ALT).pack(
-                anchor="w", padx=4, pady=3, fill="x")
+            row = ctk.CTkFrame(self.gmail_list_frame, fg_color="transparent")
+            row.pack(anchor="w", padx=4, pady=5, fill="x")
+            cb = ctk.CTkCheckBox(row, text="", variable=var, width=20,
+                                  fg_color=ACCENT, hover_color=ACCENT_HOVER, border_color=CARD_BG_ALT)
+            cb.pack(side="left", anchor="n", pady=(2, 0))
+            dot = ctk.CTkLabel(row, text="●", text_color=tier_color, font=FONT_SMALL, width=14)
+            dot.pack(side="left", anchor="n", pady=(2, 0))
+            text_col = ctk.CTkFrame(row, fg_color="transparent")
+            text_col.pack(side="left", fill="x", expand=True)
+            sender_lbl = ctk.CTkLabel(text_col, text=sender, text_color=TEXT_MUTED,
+                                       font=FONT_SMALL, anchor="w")
+            sender_lbl.pack(anchor="w", fill="x")
+            preview_lbl = ctk.CTkLabel(text_col, text=preview, text_color=TEXT, font=FONT_SMALL, anchor="w")
+            preview_lbl.pack(anchor="w", fill="x")
+            for w in (dot, text_col, sender_lbl, preview_lbl):
+                w.bind("<Button-1>", lambda e, v=var: v.set(not v.get()))
             self.gmail_checks[r["gmail_id"]] = var
 
     def _toggle_select_all_gmail(self):
         value = self.gmail_select_all_var.get()
         for var in self.gmail_checks.values():
             var.set(value)
+
+    def on_gmail_filter_change(self, value):
+        self.gmail_label_filter = GMAIL_FILTER_MAP[value]
+        self.gmail_page = 0
+        self._refresh_gmail_list()
 
     def on_gmail_prev_page(self):
         if self.gmail_page > 0:
@@ -565,10 +632,10 @@ class SpamDetectorApp:
 
         add_card = ctk.CTkFrame(page, fg_color=CARD_BG, corner_radius=14)
         add_card.pack(fill="x", padx=16, pady=(16, 10))
-        ctk.CTkLabel(add_card, text="⭐ 신뢰 발신자", font=FONT, text_color=TEXT).pack(
+        ctk.CTkLabel(add_card, text="신뢰 발신자", font=FONT, text_color=TEXT).pack(
             anchor="w", padx=14, pady=(14, 4))
         ctk.CTkLabel(
-            add_card, text="등록한 이메일/도메인은 스팸 판정과 무관하게 항상 정상(🟢)으로 처리됩니다.",
+            add_card, text="등록한 이메일/도메인은 스팸 판정과 무관하게 항상 정상으로 처리됩니다.",
             font=FONT_SMALL, text_color=TEXT_MUTED, justify="left").pack(
             anchor="w", padx=14, pady=(0, 10))
 
@@ -659,7 +726,8 @@ class SpamDetectorApp:
         parts.append(body)
         if attachment:
             parts.append(f"첨부: {attachment}")
-        return "\n".join(parts)
+        # Gmail 경로(gmail_pipeline.py)와 동일하게 5000자로 캡(일관성, DB TEXT 과다저장 방지)
+        return "\n".join(parts)[:5000]
 
     def _clear_fields(self):
         self.subject_entry.delete(0, "end")
@@ -674,8 +742,16 @@ class SpamDetectorApp:
         if not subject and not body:
             self.set_result("제목 또는 본문을 입력하세요", COLOR_NEUTRAL_TEXT, COLOR_NEUTRAL_BG)
             return
-        tier, prob = self.predictor.predict_email_tier(
-            subject=subject, sender=sender, body=body, attachment=attachment)
+        try:
+            tier, prob, lang = predict_email_tier_auto(
+                subject=subject, sender=sender, body=body, attachment=attachment)
+        except SystemExit as e:
+            self.set_result(f"모델이 없습니다. 먼저 학습하세요 (python src/train.py, train_en.py)\n{e}",
+                             COLOR_SPAM_TEXT, COLOR_SPAM_BG)
+            return
+        except Exception as e:
+            self.set_result(f"판정 실패: {e}", COLOR_SPAM_TEXT, COLOR_SPAM_BG)
+            return
         try:
             trusted = bool(sender) and database.is_trusted(sender)
         except Exception:
@@ -683,15 +759,17 @@ class SpamDetectorApp:
         if trusted:
             tier, prob = "ham", 0.0
         label_text, text_color, bg_color = TIER_DISPLAY[tier]
-        self.set_result(f"{label_text}   (스팸 확률 {prob:.1%})", text_color, bg_color)
+        lang_text = "KO" if lang == "ko" else "EN"
+        result_text = f"{label_text}   (스팸 확률 {prob:.1%} · 감지 언어 {lang_text})"
 
         content = self._compose_content(subject, sender, body, attachment)
-        # messages.predicted_label 은 ENUM('ham','spam') 이라 'review' 저장 불가 -> 이진 임계값으로 매핑
-        db_label = "spam" if prob >= SPAM_THRESHOLD else "ham"
+        # predicted_label 이 3단계(ham/review/spam)로 확장됨 -> tier 그대로 저장(표시와 일치)
+        db_label = tier
         try:
             database.save_prediction(content, db_label, prob, sender=sender or None)
         except Exception as e:
-            print(f"(저장 실패: {e})")
+            result_text += f"\n(주의: 결과 저장 실패 - {e})"
+        self.set_result(result_text, text_color, bg_color)
         self._clear_fields()
         self._refresh_data()
 
@@ -762,7 +840,7 @@ class SpamDetectorApp:
             pystray.MenuItem("열기", lambda icon, item: self.root.after(0, self.toggle_main),
                               default=True),
             pystray.MenuItem("최근 기록", lambda icon, item: self.root.after(0, lambda: self._open_to("history"))),
-            pystray.MenuItem("📥 Gmail 가져오기", lambda icon, item: self.root.after(0, lambda: self._open_to("gmail"))),
+            pystray.MenuItem("Gmail 가져오기", lambda icon, item: self.root.after(0, lambda: self._open_to("gmail"))),
             pystray.MenuItem("데모 시연", lambda icon, item: self.root.after(0, self.run_demo)),
             pystray.MenuItem("종료", lambda icon, item: self.root.after(0, self.quit_app)),
         )

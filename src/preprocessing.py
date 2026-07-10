@@ -4,7 +4,7 @@
 - 한글/영문/숫자/일부 기호를 '글자 단위'로 분해 -> LSTM 입력용 정수 시퀀스
 """
 import re
-import pickle
+import json
 from collections import Counter
 
 PAD_TOKEN = "<pad>"   # 길이 맞추기용
@@ -78,10 +78,11 @@ def encode(text: str, vocab: dict, max_len: int = 50) -> list[int]:
 
 
 def save_vocab(vocab: dict, path: str) -> None:
-    with open(path, "wb") as f:
-        pickle.dump(vocab, f)
+    """어휘사전 저장. pickle 대신 json 사용(역직렬화 시 임의 코드 실행 위험 없음 — Reviewer 지적)."""
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(vocab, f, ensure_ascii=False)
 
 
 def load_vocab(path: str) -> dict:
-    with open(path, "rb") as f:
-        return pickle.load(f)
+    with open(path, encoding="utf-8") as f:
+        return json.load(f)

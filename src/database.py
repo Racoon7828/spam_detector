@@ -5,6 +5,10 @@ MySQL 연동 헬퍼.
 import re
 import pymysql
 
+from src.logger_config import get_logger
+
+logger = get_logger(__name__)
+
 _EMAIL_RE = re.compile(r"[\w.+-]+@[\w.-]+\.\w+")
 
 
@@ -68,14 +72,23 @@ def existing_gmail_ids():
         conn.close()
 
 
+def _label_filter_clause(label):
+    """label='spam' -> ('spam','review') 로 묶어서 매칭 (검토도 주의 필요 항목이라 스팸 탭에 포함,
+    predicted_label 이 3단계(ham/review/spam)로 바뀐 뒤에도 기존 [스팸] 필터가 계속
+    같은 범위를 보여주도록 하기 위함). label='ham' -> 'ham' 만. None -> 필터 없음."""
+    if label == "spam":
+        return " AND predicted_label IN ('spam','review')", []
+    if label == "ham":
+        return " AND predicted_label=%s", ["ham"]
+    return "", []
+
+
 def fetch_gmail_pending(limit=20, offset=0, label="spam"):
     """조치하지 않은(actioned=0) Gmail 메일 목록 (페이지네이션 + 라벨 필터).
-    label: 'spam'(기본, 스팸만) | 'ham'(정상만) | None(전체)."""
+    label: 'spam'(기본, 스팸+검토) | 'ham'(정상만) | None(전체)."""
     where = "source='gmail' AND gmail_id IS NOT NULL AND actioned=0"
-    params = []
-    if label in ("spam", "ham"):
-        where += " AND predicted_label=%s"
-        params.append(label)
+    extra, params = _label_filter_clause(label)
+    where += extra
     params += [limit, offset]
     sql = f"SELECT * FROM messages WHERE {where} ORDER BY created_at DESC LIMIT %s OFFSET %s"
     conn = get_connection()
@@ -90,10 +103,8 @@ def fetch_gmail_pending(limit=20, offset=0, label="spam"):
 def count_gmail_pending(label="spam"):
     """미조치 Gmail 메일 총 개수 (페이지 계산용). label 필터 동일."""
     where = "source='gmail' AND gmail_id IS NOT NULL AND actioned=0"
-    params = []
-    if label in ("spam", "ham"):
-        where += " AND predicted_label=%s"
-        params.append(label)
+    extra, params = _label_filter_clause(label)
+    where += extra
     sql = f"SELECT COUNT(*) AS n FROM messages WHERE {where}"
     conn = get_connection()
     try:
@@ -145,12 +156,14 @@ def fetch_recent(limit=20):
 
 
 def fetch_stats():
-    """전체 통계 (총계 / 스팸 / 정상)."""
+    """전체 통계 (총계 / 스팸 / 검토 / 정상). predicted_label 이 3단계라 스팸/정상은
+    확정된 것만 세고(review 제외), review_count 로 애매한 건수를 별도 노출."""
     sql = """
         SELECT
             COUNT(*) AS total,
-            SUM(predicted_label = 'spam') AS spam_count,
-            SUM(predicted_label = 'ham')  AS ham_count
+            SUM(predicted_label = 'spam')   AS spam_count,
+            SUM(predicted_label = 'review') AS review_count,
+            SUM(predicted_label = 'ham')    AS ham_count
         FROM messages
     """
     conn = get_connection()
@@ -162,8 +175,12 @@ def fetch_stats():
         conn.close()
 
 
-def save_report(content, user_label, note=None):
-    """사용자가 직접 등록한 스팸/정상(정답)을 user_reports 에 저장."""
+def save_report(content, user_label, note=None, trigger_retrain=True):
+    """사용자가 직접 등록한 스팸/정상(정답)을 user_reports 에 저장.
+    저장 후 자동 재학습 임계치를 체크(백그라운드, 논블로킹) -> 쌓이면 자동 재학습+배포.
+    trigger_retrain=False 로 두면 이 호출에서는 체크를 생략한다(벌크 처리용 —
+    N건을 반복 저장할 때마다 매번 스레드+전체조회 하지 않도록, 호출측이 루프 종료 후
+    trigger_retrain_check() 를 한 번만 부르게 하기 위함)."""
     sql = "INSERT INTO user_reports (content, user_label, note) VALUES (%s, %s, %s)"
     conn = get_connection()
     try:
@@ -172,6 +189,19 @@ def save_report(content, user_label, note=None):
         conn.commit()
     finally:
         conn.close()
+
+    if trigger_retrain:
+        trigger_retrain_check()
+
+
+def trigger_retrain_check():
+    """자동 재학습 임계치 체크(백그라운드, 논블로킹)를 1회 실행.
+    save_report(trigger_retrain=False) 로 여러 건 저장한 뒤 마지막에 한 번만 호출할 것."""
+    try:
+        from src.auto_retrain import check_and_retrain_async
+        check_and_retrain_async()
+    except Exception as e:
+        logger.error(f"auto_retrain 체크 생략: {e}")
 
 
 def fetch_reports(limit=20):

@@ -31,11 +31,14 @@ _NOISE = re.compile(r"반송|Returned mail|Auto reply|out of the office", re.IGN
 
 
 def read_csv_any(path):
-    """인코딩 자동 감지 로드."""
+    """인코딩 자동 감지 로드. 인코딩 실패만 다음 후보로 넘어가고, 파일 없음 등
+    다른 오류(FileNotFoundError 등)는 그 자리에서 바로 드러나게 함(원인 은폐 방지)."""
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"데이터 파일이 없습니다: {path}")
     for enc in ("utf-8-sig", "cp949", "utf-8"):
         try:
             return pd.read_csv(path, encoding=enc)
-        except (UnicodeDecodeError, Exception):
+        except UnicodeDecodeError:
             continue
     return pd.read_csv(path, encoding="cp949", encoding_errors="replace")
 

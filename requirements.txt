@@ -22,3 +22,9 @@ pystray>=0.19          # 시스템 트레이 아이콘/메뉴
 google-api-python-client>=2.0
 google-auth-oauthlib>=1.2
 google-auth-httplib2>=0.2
+
+# --- 테스트 ---
+pytest>=8.0
+
+# --- 패키징 (배포용 실행파일 빌드 시에만 필요, 앱 실행 자체엔 불필요) ---
+pyinstaller>=6.0

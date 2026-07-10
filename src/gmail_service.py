@@ -18,6 +18,9 @@ import base64
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config.config import GMAIL_CREDENTIALS_PATH, GMAIL_TOKEN_PATH, GMAIL_FETCH_COUNT
+from src.logger_config import get_logger
+
+logger = get_logger(__name__)
 
 # modify = 읽기 + 라벨변경/휴지통. (영구삭제 권한 mail.google.com 은 의도적으로 미사용)
 SCOPES = ["https://www.googleapis.com/auth/gmail.modify"]
@@ -88,35 +91,61 @@ def _extract(payload):
     return body_text.strip(), " ".join(attachments)
 
 
+BATCH_SIZE = 50   # Gmail API 배치 요청 1건당 권장 최대 건수 (호출 수를 N번 -> N/50번으로 절감)
+
+
 def fetch_recent(n=None):
     """최근 메일 n건을 [{gmail_id, subject, sender, body, attachment}] 로 반환.
-    n 이 500 보다 크면 Gmail 페이지를 넘겨가며(pageToken) 모은다."""
+    n 이 500 보다 크면 Gmail 페이지를 넘겨가며(pageToken) 모은다.
+    본문 조회는 건마다 개별 요청하지 않고 배치(BATCH_SIZE건씩 묶음)로 보내
+    HTTP 왕복 횟수를 줄인다(Reviewer 지적, SPEC 10-1 개선항목 4)."""
     n = n or GMAIL_FETCH_COUNT
     service = get_service()
-    out = []
+
+    stubs = []
     page_token = None
-    while len(out) < n:
+    while len(stubs) < n:
         resp = service.users().messages().list(
-            userId="me", maxResults=min(500, n - len(out)),
+            userId="me", maxResults=min(500, n - len(stubs)),
             pageToken=page_token).execute()
-        for m in resp.get("messages", []):
-            msg = service.users().messages().get(
-                userId="me", id=m["id"], format="full").execute()
-            payload = msg.get("payload", {})
-            headers = payload.get("headers", [])
-            body, attachments = _extract(payload)
-            out.append({
-                "gmail_id": m["id"],
-                "subject": _header(headers, "Subject"),
-                "sender": _header(headers, "From"),
-                "body": body,
-                "attachment": attachments,
-            })
-            if len(out) >= n:
-                break
+        stubs.extend(resp.get("messages", []))
         page_token = resp.get("nextPageToken")
         if not page_token:
             break
+    stubs = stubs[:n]
+
+    responses = {}
+
+    def _on_response(request_id, response, exception):
+        if exception is not None:
+            logger.error(f"Gmail 메일 조회 실패 {request_id}: {exception}")
+            return
+        responses[request_id] = response
+
+    for i in range(0, len(stubs), BATCH_SIZE):
+        batch = service.new_batch_http_request(callback=_on_response)
+        for m in stubs[i:i + BATCH_SIZE]:
+            batch.add(
+                service.users().messages().get(userId="me", id=m["id"], format="full"),
+                request_id=m["id"],
+            )
+        batch.execute()
+
+    out = []
+    for m in stubs:
+        msg = responses.get(m["id"])
+        if msg is None:   # 배치 내 개별 실패는 건너뜀(위에서 로깅됨)
+            continue
+        payload = msg.get("payload", {})
+        headers = payload.get("headers", [])
+        body, attachments = _extract(payload)
+        out.append({
+            "gmail_id": m["id"],
+            "subject": _header(headers, "Subject"),
+            "sender": _header(headers, "From"),
+            "body": body,
+            "attachment": attachments,
+        })
     return out
 
 
@@ -150,7 +179,7 @@ def apply_action(gmail_ids, action):
                 raise ValueError(f"알 수 없는 action: {action}")
             ok += 1
         except Exception as e:
-            print(f"조치 실패 {gid}: {e}")
+            logger.error(f"Gmail 조치 실패 {gid}: {e}")
             fail += 1
     return ok, fail
 

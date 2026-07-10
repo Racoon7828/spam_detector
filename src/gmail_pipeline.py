@@ -1,8 +1,8 @@
 """
 Gmail 파이프라인: 최근 메일 가져오기 → 3단계 판정 → MySQL 저장.
 - gmail_id 로 이미 저장된 메일은 건너뜀 (중복 방지)
-- messages.predicted_label 은 ENUM('ham','spam') 이라 이진값으로 저장,
-  3단계 표시는 앱에서 spam_prob 로 재계산(SPAM_HIGH/REVIEW_LOW)
+- messages.predicted_label 은 ENUM('ham','review','spam') — 3단계 판정을 그대로 저장
+  (화면 표시와 DB 통계가 항상 일치하도록)
 
 실행: python src/gmail_pipeline.py
 앱에서: from src.gmail_pipeline import run;  saved, total = run()
@@ -11,16 +11,16 @@ import os
 import sys
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from config.config import SPAM_THRESHOLD, MODEL_VERSION
+from config.config import MODEL_VERSION
 
 
 def run(n=None):
-    """가져오기→판정→저장. (신규 저장 건수, 가져온 총 건수) 반환."""
+    """가져오기→판정→저장. (신규 저장 건수, 가져온 총 건수) 반환.
+    언어 자동감지(predict_router) -> 한국어(글자단위)/영어(단어단위) 모델로 라우팅."""
     from src.gmail_service import fetch_recent
-    from src.predict import SpamPredictor
+    from src.predict_router import predict_email_tier_auto
     from src import database
 
-    predictor = SpamPredictor()
     emails = fetch_recent(n)
     existing = database.existing_gmail_ids()
 
@@ -28,19 +28,20 @@ def run(n=None):
     for e in emails:
         if e["gmail_id"] in existing:
             continue
-        _, prob = predictor.predict_email_tier(
+        tier, prob, lang = predict_email_tier_auto(
             subject=e["subject"], sender=e["sender"],
             body=e["body"], attachment=e["attachment"])
         # 신뢰 발신자면 모델과 무관하게 정상 처리 (allowlist 규칙 우선)
         if database.is_trusted(e["sender"]):
             label, prob = "ham", 0.0
         else:
-            label = "spam" if prob >= SPAM_THRESHOLD else "ham"   # DB는 이진
+            label = tier   # 'ham' | 'review' | 'spam' 그대로 저장
         content = f"{e['subject']} {e['body']}".strip()[:5000]
+        model_version = MODEL_VERSION if lang == "ko" else f"{MODEL_VERSION}-en"
         database.save_prediction(
             content=content, predicted_label=label, spam_prob=prob,
             sender=(e["sender"] or "")[:255], source="gmail",
-            model_version=MODEL_VERSION, gmail_id=e["gmail_id"])
+            model_version=model_version, gmail_id=e["gmail_id"])
         saved += 1
     return saved, len(emails)
 
@@ -58,8 +59,11 @@ def mark_not_spam(gmail_ids):
     for gid in gmail_ids:
         content = database.get_content_by_gmail_id(gid)
         if content:
-            database.save_report(content, "ham", note="gmail_not_spam")
+            # 벌크 처리라 매 건마다 재학습 체크(스레드+전체조회)를 트리거하지 않음 -> 루프 후 1회만
+            database.save_report(content, "ham", note="gmail_not_spam", trigger_retrain=False)
             reported += 1
+    if reported:
+        database.trigger_retrain_check()
     ok, _ = apply_action(gmail_ids, "not_spam")
     return reported, ok
 
