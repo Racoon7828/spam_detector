@@ -48,7 +48,7 @@ spam_detector/
 ├── build.spec                 # PyInstaller 빌드 스펙
 ├── data/                      # 학습 데이터셋 (git 제외)
 ├── models/                    # 학습된 모델 저장 (git 제외)
-├── docs/                      # 상세 명세(SPEC.md) · 변경 이력(CHANGELOG.md)
+├── docs/                      # 변경 이력(CHANGELOG.md) — SPEC.md는 협업용 내부 문서라 저장소 제외
 └── main.py                    # 진입점
 ```
 
@@ -100,15 +100,15 @@ pyinstaller build.spec
 > ⚠️ 빌드 시점의 `config/config.py`(MySQL 비밀번호 포함)가 실행파일에 그대로 컴파일되어 들어가므로,
 > 개인용 배포로만 사용하고 외부에 공유하지 않는다.
 
-## 진행 상태
-- [x] 프로젝트 구조 / 데이터셋 준비 (한국어·영어 실+합성 데이터)
-- [x] 전처리 파이프라인 (한글: 글자단위, 영어: 단어단위)
-- [x] LSTM 모델 학습 (양방향 + 마스킹 평균풀링)
-- [x] MySQL 연동 (+ 배포용 SQLite 자동 전환)
-- [x] 데스크탑 앱 (트레이 상주형)
-- [x] Gmail API 연동 (읽기 전용, 배치 조회)
-- [x] 사용자 피드백 → 자동 재학습 (안전장치 + 핫 리로드)
-- [x] 로깅 / 테스트(pytest) / 모델 롤백
-- [x] 패키징 (PyInstaller, onedir)
+**Gmail 연동은 exe만으로는 안 된다.** 판정·저장·통계 등 나머지 기능은 exe만으로 바로 동작하지만,
+Gmail은 개인 Google Cloud OAuth 인증정보가 필요해서 동봉할 수 없다(동봉하면 그 자체로 정보 유출).
+Gmail 기능까지 쓰려면:
+1. `credentials.json`을 실행파일 옆이 아니라 **`dist\spam_detector\_internal\config\credentials.json`** 에 넣는다
+   (onedir 빌드는 실제 리소스가 `_internal` 폴더 밑에 위치함)
+2. 최초 1회는 인터넷 연결 + 브라우저로 OAuth 동의 필요 (이후 `token.json`이 같은 폴더에 캐시됨)
+3. 검증되지 않은 OAuth 앱이라 **Google Cloud Console의 테스트 사용자로 등록된 계정만** 로그인 가능 —
+   다른 사람에게 배포해 Gmail까지 쓰게 하려면 그 사람 계정을 테스트 사용자로 추가하거나, 각자 OAuth 클라이언트를 새로 만들어야 한다
 
-자세한 내부 동작·API 계약·DB 스키마는 [`docs/SPEC.md`](docs/SPEC.md), 변경 이력은 [`docs/CHANGELOG.md`](docs/CHANGELOG.md) 참고.
+`credentials.json`이 없어도 앱은 정상 실행되며, Gmail 탭을 열 때만 안내 메시지가 뜬다(다른 기능엔 영향 없음).
+
+자세한 변경 이력은 [`docs/CHANGELOG.md`](docs/CHANGELOG.md) 참고.
