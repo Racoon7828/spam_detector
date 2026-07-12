@@ -37,7 +37,8 @@ a = Analysis(
         ("models/vocab.json", "models"),
         ("models/spam_lstm_en.pt", "models"),
         ("models/vocab_en.json", "models"),
-        ("config/db_schema.sql", "config"),       # init_db.py 가 참조하는 스키마 파일
+        ("config/db_schema.sql", "config"),        # 참고용(개발환경 MySQL 스키마, 배포판은 미사용)
+        ("config/db_schema_sqlite.sql", "config"), # 배포용 exe가 실제 사용하는 SQLite 스키마
     ],
     hiddenimports=hidden_imports,
     hookspath=[],

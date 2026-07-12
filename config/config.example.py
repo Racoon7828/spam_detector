@@ -4,11 +4,18 @@
 (config.py 는 .gitignore 에 등록되어 비밀정보가 커밋되지 않습니다.)
 """
 import os
+import sys
 
 # 프로젝트 루트 (config/ 의 상위) 기준 절대경로 -> 실행 위치와 무관하게 동작
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# --- MySQL 접속 정보 ---
+# --- DB 백엔드 자동 선택 ---
+# 개발 환경(소스 직접 실행)은 MySQL, PyInstaller 배포용 exe(sys.frozen)는 SQLite(설치 불필요)를
+# 자동으로 사용. 대상 PC에 MySQL 설치를 요구하지 않기 위함.
+DB_BACKEND = "sqlite" if getattr(sys, "frozen", False) else "mysql"
+SQLITE_PATH = os.path.join(_ROOT, "data", "spam_detector.db")
+
+# --- MySQL 접속 정보 (DB_BACKEND == "mysql" 일 때만 사용) ---
 # root 대신 spam_detector 스키마 전용 최소권한 계정 권장(블레스트 반경 축소):
 #   CREATE USER 'spam_app'@'localhost' IDENTIFIED BY '강한비밀번호';
 #   GRANT ALL PRIVILEGES ON spam_detector.* TO 'spam_app'@'localhost';

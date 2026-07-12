@@ -15,6 +15,14 @@ def main():
         from src.train import main as train_main
         train_main()
     elif mode == "app":
+        from src.init_db import ensure_schema
+        from src.logger_config import get_logger
+        try:
+            ensure_schema()   # 최초 실행 시 스키마 자동 생성(멱등) — 배포판에서 init_db.py 수동 실행 불필요
+        except Exception as e:
+            get_logger(__name__).warning(
+                f"DB 자동 초기화 실패(DB 없이도 판정 자체는 가능): {e}"
+            )
         from app.app import main as app_main
         app_main()
     elif mode == "test":

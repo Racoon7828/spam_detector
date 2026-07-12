@@ -16,6 +16,7 @@ config/token.json
 data/*.csv
 data/**/*.csv
 data/*.txt
+data/*.db
 models/*.pt
 models/*.pth
 models/*.pkl
@@ -37,3 +38,6 @@ Thumbs.db
 Agent.md
 Claude.md
 SPEC.md
+
+# 포트폴리오/발표 산출물 (개인 보관용, 저장소에는 불필요)
+*.pptx

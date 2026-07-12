@@ -2,6 +2,64 @@
 
 ## [Unreleased]
 
+### 2026-07-11 (추가) — 구조도(drawio) 최종 업데이트
+
+#### Changed (Planner — 사용자 요청: 최종 구조 반영 + 화살표 겹침 정리)
+- `docs/spam_detector.drawio` 전면 갱신 — 초기 버전(한국어 전용, MySQL만, 자동재학습/롤백/로깅/
+  테스트/패키징 이전)에서 현재 최종 구조로 갱신: 언어 자동감지+라우팅, 한/영 별도 모델,
+  자동재학습(F1 안전장치+model_rollback+핫리로드), 로깅, 배포용 SQLite 자동전환, 패키징,
+  pytest 44건 노드 추가
+- 레이아웃을 열(서빙 흐름: 입력→라우팅→전처리→모델→판정→DB→앱→Gmail조치) + 하단 두 클러스터
+  (수동 학습 파이프라인 / 자동재학습 파이프라인)로 재구성하고, 좌표를 직접 계산해 **박스-박스
+  겹침 0건**, 주요 간선(엣지)이 다른 박스를 관통하지 않도록 우회 경로(웨이포인트) 지정 —
+  스크립트로 전수 검증(박스 겹침 검사 + 간선-박스 충돌 검사 모두 통과)
+
+### 2026-07-11 (추가) — 배포용 exe의 MySQL 의존성 제거 (SQLite 이원화)
+
+#### Added (Planner — 사용자 지적: 배포판을 다른 PC에 주려면 그 PC에도 MySQL 설치가 필요한 문제)
+- **DB 백엔드 이원화**: `config.py`에 `DB_BACKEND = "sqlite" if sys.frozen else "mysql"` 추가 —
+  개발 환경(소스 실행)은 지금까지처럼 MySQL(과제 요구사항 그대로 유지), **PyInstaller 배포용
+  exe는 SQLite로 자동 전환**(파이썬 표준 내장이라 별도 설치·서버 구동 불필요, 파일 하나로 완결)
+- `src/database.py`: `_SQLiteDictCursor`/`_SQLiteConnection` 래퍼 추가 — SQLite 커넥션을
+  pymysql `DictCursor`와 동일한 인터페이스(딕셔너리 row, `%s` 플레이스홀더)로 감싸서 나머지
+  함수는 백엔드 상관없이 그대로 동작. `TIMESTAMP` 컬럼은 커스텀 컨버터로 datetime 객체로 변환
+  (MySQL과 동일하게 `app.py`의 `.strftime()` 호출과 호환). `INSERT ... ON DUPLICATE KEY
+  UPDATE`(MySQL 전용 문법)는 `_upsert_trusted_sender_sql()`로 분리해 SQLite에서는
+  `ON CONFLICT ... DO UPDATE`를 쓰도록 분기
+- `config/db_schema_sqlite.sql` 신규 — MySQL 스키마의 SQLite 대응판(`ENUM`→`CHECK`,
+  `AUTO_INCREMENT`→`INTEGER PRIMARY KEY AUTOINCREMENT`). 신규 백엔드라 기존 SQLite DB가
+  없으므로 마이그레이션 로직 불필요(스키마만 적용하면 됨)
+- `src/init_db.py`의 `ensure_schema()`를 `_ensure_schema_mysql()`/`_ensure_schema_sqlite()`로
+  분기. SQLite 쪽은 `conn.executescript()`로 훨씬 단순(세미콜론 수동 분리 불필요)
+- `build.spec`에 `config/db_schema_sqlite.sql`을 datas로 추가(배포판이 실제 참조하는 파일이므로)
+- `tests/test_database_sqlite.py` 신규 6개 테스트: 스키마 생성/멱등성, `save_prediction`→
+  `fetch_recent` 왕복(TIMESTAMP가 datetime으로 오는지 포함), `fetch_stats` 3단계 집계,
+  신뢰 발신자 upsert(같은 pattern 재등록 시 충돌 없이 UPDATE), `gmail_id` NULL 다중 허용
+  (SQLite UNIQUE 제약이 MySQL과 동일하게 여러 NULL을 허용하는지)
+- **결과**: 배포된 exe는 대상 PC에 MySQL이 전혀 없어도 완전히 동작함. 개발/학습 경로는 MySQL을
+  그대로 요구하므로 과제 요구사항(MySQL 활용)은 훼손되지 않음
+- 검증: `pytest` 44/44 통과(기존 38 + sqlite 6), exe 재빌드 후 실행 → `spam_detector.log`에
+  `DB 스키마 점검 완료(sqlite): ...` 자동 기록 확인(스모크 테스트)
+- `.gitignore`에 `data/*.db` 추가
+- SPEC.md 6장(DB 스키마)·10-1장("DB 배포 의존성" 항목)·모듈맵·11장(테스트 44건) 갱신
+
+### 2026-07-11 (추가) — DB 스키마 자동 초기화
+
+#### Added (Planner — 사용자 지적: 패키징한 exe엔 init_db.py 를 돌릴 방법이 없음)
+- `src/init_db.py`: 기존 `main()`에 있던 로직을 `ensure_schema()`로 분리(멱등 — 이미 최신이면
+  아무 변화 없음). 연결 실패 시 예외를 그대로 전파해 호출자가 처리 방식을 고르게 함
+  (CLI `main()`은 여전히 `SystemExit`로 친절한 안내, 자동 호출 쪽은 아래처럼 경고만 남기고 계속 진행)
+- `main.py`의 `app` 모드(=exe 진입점) 시작 시 `ensure_schema()` 자동 호출 추가 → 최초 배포/실행 시
+  스키마가 자동 생성되어, 패키징된 배포판에서도 소스 코드로 `init_db.py`를 직접 실행할 필요가 없어짐.
+  DB 연결 자체가 안 되면(MySQL 미설치 등) `logger.warning`만 남기고 앱은 정상 실행(판정은 DB 없이도
+  가능하므로 앱 실행을 막지 않음)
+- **한계(문서화)**: MySQL 서버 자체를 설치/동봉하는 것은 아님 — 실행 PC에 MySQL이 이미 설치되어
+  구동 중이어야 하고, 이 변경은 "스키마/테이블 생성"만 자동화한 것. 다른 PC에 배포하려면 그 PC에도
+  MySQL 설치 필요(SPEC 10-1 참고)
+- 검증: `ensure_schema()` 직접 호출 → 기존 스키마 이미 최신 상태에서 멱등하게 통과 확인,
+  `pytest` 38/38 재확인, PyInstaller 재빌드 후 exe 재실행으로 스모크 테스트
+- SPEC.md 10-1장 "패키징/배포" 항목에 자동 초기화 내용 보강
+
 ### 2026-07-11
 
 #### Added (Planner — 개선제안 1·2·3번: 로깅·테스트·모델롤백, 사용자 우선순위 승인)

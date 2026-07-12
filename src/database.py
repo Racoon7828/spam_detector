@@ -1,8 +1,15 @@
 """
-MySQL 연동 헬퍼.
-예측 결과 저장 / 조회 / 통계 집계 / 신뢰 발신자(allowlist).
+DB 연동 헬퍼. 예측 결과 저장 / 조회 / 통계 집계 / 신뢰 발신자(allowlist).
+
+백엔드는 두 가지: 개발 환경은 MySQL(과제 요구사항), PyInstaller 배포용 exe는 SQLite(설치
+불필요) — config.DB_BACKEND 로 자동 선택(sys.frozen 기준). 이 파일의 모든 함수는 어느
+백엔드든 동일하게 동작하도록 get_connection() 이 반환하는 커넥션/커서를 pymysql
+DictCursor(딕셔너리 row, %s 플레이스홀더)와 같은 인터페이스로 통일한다.
 """
+import os
 import re
+import datetime
+import sqlite3
 import pymysql
 
 from src.logger_config import get_logger
@@ -20,7 +27,7 @@ def extract_email(sender):
     return m.group(0).lower() if m else str(sender).strip().lower()
 
 try:
-    from config.config import DB_CONFIG
+    from config.config import DB_CONFIG, DB_BACKEND, SQLITE_PATH
 except ImportError:
     raise SystemExit(
         "config/config.py 가 없습니다. "
@@ -28,8 +35,76 @@ except ImportError:
     )
 
 
+def _parse_sqlite_timestamp(raw: bytes):
+    """SQLite TIMESTAMP 컬럼(CURRENT_TIMESTAMP: 'YYYY-MM-DD HH:MM:SS[.ffffff]')을
+    datetime 으로 변환 — MySQL(pymysql)이 TIMESTAMP를 datetime 객체로 주는 것과 동작을 맞춤
+    (app.py 등에서 .strftime() 호출하는 코드가 백엔드 상관없이 그대로 동작하게)."""
+    text = raw.decode()
+    for fmt in ("%Y-%m-%d %H:%M:%S.%f", "%Y-%m-%d %H:%M:%S"):
+        try:
+            return datetime.datetime.strptime(text, fmt)
+        except ValueError:
+            continue
+    return text
+
+
+sqlite3.register_converter("TIMESTAMP", _parse_sqlite_timestamp)
+
+
+class _SQLiteDictCursor:
+    """sqlite3 커서를 pymysql DictCursor와 같은 인터페이스(딕셔너리 row, %s 플레이스홀더)로
+    맞춰주는 얇은 래퍼. SQL 텍스트 자체는 두 백엔드가 공유하므로 호출부는 변경 없음."""
+
+    def __init__(self, cur):
+        self._cur = cur
+
+    def execute(self, sql, params=()):
+        return self._cur.execute(sql.replace("%s", "?"), params)
+
+    def fetchone(self):
+        row = self._cur.fetchone()
+        return dict(row) if row is not None else None
+
+    def fetchall(self):
+        return [dict(r) for r in self._cur.fetchall()]
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self._cur.close()
+
+
+class _SQLiteConnection:
+    def __init__(self, conn):
+        self._conn = conn
+
+    def cursor(self):
+        return _SQLiteDictCursor(self._conn.cursor())
+
+    def commit(self):
+        self._conn.commit()
+
+    def close(self):
+        self._conn.close()
+
+
+def _upsert_trusted_sender_sql():
+    """INSERT ... ON DUPLICATE KEY UPDATE(MySQL) 는 SQLite에 없는 문법이라 백엔드별로 분기."""
+    if DB_BACKEND == "sqlite":
+        return ("INSERT INTO trusted_senders (pattern, note) VALUES (%s, %s) "
+                "ON CONFLICT(pattern) DO UPDATE SET note=excluded.note")
+    return ("INSERT INTO trusted_senders (pattern, note) VALUES (%s, %s) "
+            "ON DUPLICATE KEY UPDATE note = VALUES(note)")
+
+
 def get_connection():
-    """MySQL 커넥션 반환."""
+    """설정된 백엔드(mysql/sqlite)에 맞는 커넥션 반환."""
+    if DB_BACKEND == "sqlite":
+        os.makedirs(os.path.dirname(SQLITE_PATH), exist_ok=True)
+        conn = sqlite3.connect(SQLITE_PATH, detect_types=sqlite3.PARSE_DECLTYPES)
+        conn.row_factory = sqlite3.Row   # 컬럼명 접근 가능 -> _SQLiteDictCursor에서 dict()로 변환
+        return _SQLiteConnection(conn)
     return pymysql.connect(
         host=DB_CONFIG["host"],
         port=DB_CONFIG["port"],
@@ -240,8 +315,7 @@ def add_trusted_sender(pattern, note=None):
     pattern = (pattern or "").strip().lower()
     if not pattern:
         return
-    sql = ("INSERT INTO trusted_senders (pattern, note) VALUES (%s, %s) "
-           "ON DUPLICATE KEY UPDATE note = VALUES(note)")
+    sql = _upsert_trusted_sender_sql()
     conn = get_connection()
     try:
         with conn.cursor() as cur:
@@ -299,9 +373,7 @@ def trust_senders_by_gmail_ids(gmail_ids, use_domain=False):
                 if not email:
                     continue
                 pattern = email.split("@")[-1] if (use_domain and "@" in email) else email
-                cur.execute(
-                    "INSERT INTO trusted_senders (pattern, note) VALUES (%s, %s) "
-                    "ON DUPLICATE KEY UPDATE note=VALUES(note)", (pattern, "from_list"))
+                cur.execute(_upsert_trusted_sender_sql(), (pattern, "from_list"))
                 if pattern not in added:
                     added.append(pattern)
         conn.commit()

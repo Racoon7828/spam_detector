@@ -1,112 +1,214 @@
 <mxfile host="app.diagrams.net">
-  <diagram name="전체 구조도(Planner)" id="arch_full_planner">
-    <mxGraphModel dx="1542" dy="959" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+  <diagram name="전체 구조도 - 최종 (2026-07-11)" id="arch_full_planner">
+    <mxGraphModel dx="1542" dy="959" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1500" pageHeight="1080" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-        <mxCell id="tt" parent="1" style="text;html=1;fontSize=18;fontStyle=1;" value="Spam Detector — 전체 구조도" vertex="1">
-          <mxGeometry height="30" width="420" x="40" y="20" as="geometry" />
+
+        <mxCell id="tt" parent="1" style="text;html=1;fontSize=18;fontStyle=1;" value="Spam Detector — 전체 구조도 (최종)" vertex="1">
+          <mxGeometry height="30" width="500" x="40" y="20" as="geometry" />
         </mxCell>
-        <mxCell id="c_in" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="① 입력&#xa;수동 4필드 · Gmail 가져오기" vertex="1">
-          <mxGeometry height="50" width="210" x="309" y="70" as="geometry" />
+        <mxCell id="lg" parent="1" style="text;html=1;fontSize=11;fontColor=#555555;" value="색상: 파랑=입력 · 초록=처리/학습 · 주황=규칙 · 노랑=판정 · 빨강=DB · 보라=앱 · 회색=자동화·배포·품질" vertex="1">
+          <mxGeometry height="40" width="340" x="1140" y="20" as="geometry" />
         </mxCell>
-        <mxCell id="c_pre" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="② 전처리&#xa;compose_email · 글자단위 토큰화" vertex="1">
-          <mxGeometry height="50" width="210" x="309" y="150" as="geometry" />
+
+        <!-- 입력 -->
+        <mxCell id="c_in_manual" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="① 입력&#xa;수동 4필드" vertex="1">
+          <mxGeometry height="50" width="200" x="470" y="80" as="geometry" />
         </mxCell>
-        <mxCell id="c_model" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="③ 양방향 LSTM (한국어)&#xa;F1 0.968" vertex="1">
-          <mxGeometry height="50" width="210" x="309" y="230" as="geometry" />
+        <mxCell id="c_in_gmail" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="① 입력&#xa;Gmail 배치 가져오기(배치조회)" vertex="1">
+          <mxGeometry height="50" width="220" x="700" y="80" as="geometry" />
         </mxCell>
-        <mxCell id="c_rule" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" value="&amp;nbsp;신뢰 발신자 allowlist&lt;br&gt;(규칙: 모델보다 우선 → 정상)" vertex="1">
-          <mxGeometry height="50" width="200" x="40" y="325" as="geometry" />
+
+        <!-- 라우팅 -->
+        <mxCell id="c_route" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="② 언어 자동감지 + 라우팅&#xa;(predict_router)" vertex="1">
+          <mxGeometry height="50" width="250" x="560" y="160" as="geometry" />
         </mxCell>
-        <mxCell id="c_decide" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" value="④ 3단계 판정&lt;br&gt;스팸 | 검토 | 정상" vertex="1">
-          <mxGeometry height="60" width="210" x="309" y="320" as="geometry" />
+
+        <!-- 전처리 (한/영) -->
+        <mxCell id="c_pre_ko" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="전처리 (한국어)&#xa;글자단위 토큰화" vertex="1">
+          <mxGeometry height="50" width="200" x="470" y="240" as="geometry" />
         </mxCell>
-        <mxCell id="c_dbh" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;" value="⑤ MySQL  (spam_detector)" vertex="1">
-          <mxGeometry height="34" width="210" x="309" y="430" as="geometry" />
+        <mxCell id="c_pre_en" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="전처리 (영어)&#xa;단어단위 토큰화" vertex="1">
+          <mxGeometry height="50" width="220" x="700" y="240" as="geometry" />
+        </mxCell>
+
+        <!-- 모델 (한/영) -->
+        <mxCell id="c_model_ko" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="③ 양방향 LSTM (한국어)&#xa;F1 0.968" vertex="1">
+          <mxGeometry height="50" width="200" x="470" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="c_model_en" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="③ 양방향 LSTM (영어)&#xa;F1 0.957" vertex="1">
+          <mxGeometry height="50" width="220" x="700" y="320" as="geometry" />
+        </mxCell>
+
+        <!-- 규칙 override -->
+        <mxCell id="c_rule" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" value="신뢰 발신자 allowlist&#xa;(모델보다 우선 → 정상)" vertex="1">
+          <mxGeometry height="50" width="190" x="250" y="400" as="geometry" />
+        </mxCell>
+
+        <!-- 판정 -->
+        <mxCell id="c_decide" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" value="④ 3단계 판정&#xa;스팸 | 검토 | 정상" vertex="1">
+          <mxGeometry height="60" width="250" x="560" y="470" as="geometry" />
+        </mxCell>
+
+        <!-- DB -->
+        <mxCell id="c_db" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;" value="⑤ DB — 개발:MySQL / 배포exe:SQLite(자동전환)" vertex="1">
+          <mxGeometry height="34" width="250" x="560" y="570" as="geometry" />
         </mxCell>
         <mxCell id="c_db1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" value="messages" vertex="1">
-          <mxGeometry height="30" width="100" x="309" y="468" as="geometry" />
+          <mxGeometry height="30" width="110" x="520" y="614" as="geometry" />
         </mxCell>
         <mxCell id="c_db2" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" value="training_runs" vertex="1">
-          <mxGeometry height="30" width="100" x="419" y="468" as="geometry" />
+          <mxGeometry height="30" width="110" x="640" y="614" as="geometry" />
         </mxCell>
         <mxCell id="c_db3" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" value="user_reports" vertex="1">
-          <mxGeometry height="30" width="100" x="309" y="502" as="geometry" />
+          <mxGeometry height="30" width="110" x="520" y="654" as="geometry" />
         </mxCell>
         <mxCell id="c_db4" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" value="trusted_senders" vertex="1">
-          <mxGeometry height="30" width="100" x="419" y="502" as="geometry" />
+          <mxGeometry height="30" width="110" x="640" y="654" as="geometry" />
         </mxCell>
-        <mxCell id="c_app" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" value="데스크탑 앱 (트레이 상주)&lt;br&gt;홈 · 기록 · Gmail · 신뢰발신자&lt;br&gt;3단계 색상 표시 / 통계" vertex="1">
-          <mxGeometry height="120" width="230" x="565" y="147" as="geometry" />
+
+        <!-- 앱 / Gmail 조치 -->
+        <mxCell id="c_app" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" value="데스크탑 앱 (트레이 상주)&#xa;홈 · 기록 · Gmail · 신뢰발신자&#xa;3단계 색상표시 / 통계" vertex="1">
+          <mxGeometry height="110" width="230" x="950" y="570" as="geometry" />
         </mxCell>
-        <mxCell id="c_gact" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" value="Gmail 조치 (사용자 확인)&#xa;🗑️ 삭제  🚫 스팸  ✅ 스팸아님&#xa;→ 휴지통/스팸함, 목록서 숨김" vertex="1">
-          <mxGeometry height="90" width="230" x="565" y="461" as="geometry" />
+        <mxCell id="c_gact" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" value="Gmail 조치 (사용자 확인)&#xa;삭제 / 스팸 / 스팸아님&#xa;→ actioned=1, 목록서 숨김" vertex="1">
+          <mxGeometry height="80" width="230" x="950" y="700" as="geometry" />
         </mxCell>
-        <mxCell id="c_tdata" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="학습 데이터&#xa;실(지자체·우체국) + 합성" vertex="1">
-          <mxGeometry height="50" width="180" x="40" y="640" as="geometry" />
+
+        <!-- 패키징 / 품질 (독립 안내 박스) -->
+        <mxCell id="c_pkg" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" value="패키징: PyInstaller(onedir)&#xa;→ 배포용 exe. MySQL 불필요(SQLite 자동전환)" vertex="1">
+          <mxGeometry height="60" width="300" x="1140" y="80" as="geometry" />
         </mxCell>
-        <mxCell id="c_tbuild" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="build_dataset.py&#xa;→ spam.csv" vertex="1">
-          <mxGeometry height="50" width="160" x="250" y="640" as="geometry" />
+        <mxCell id="c_test" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" value="품질: pytest 단위테스트 44건&#xa;(회귀 방지)" vertex="1">
+          <mxGeometry height="50" width="300" x="1140" y="160" as="geometry" />
         </mxCell>
-        <mxCell id="c_ttrain" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="train.py&#xa;(+ user_reports ×5)" vertex="1">
-          <mxGeometry height="50" width="190" x="440" y="640" as="geometry" />
+
+        <!-- 자동재학습 클러스터 -->
+        <mxCell id="c_auto" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" value="자동재학습 (auto_retrain)&#xa;피드백 N건↑ 감지" vertex="1">
+          <mxGeometry height="50" width="190" x="700" y="830" as="geometry" />
         </mxCell>
-        <mxCell id="lg" parent="1" style="text;html=1;fontSize=11;fontColor=#555555;" value="색상: 파랑=입력 · 초록=처리/학습 · 주황=규칙 · 노랑=판정 · 빨강=DB · 보라=앱" vertex="1">
-          <mxGeometry height="20" width="375" x="420" y="20" as="geometry" />
+        <mxCell id="c_safety" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" value="F1 안전장치&#xa;하락 시 배포 보류" vertex="1">
+          <mxGeometry height="50" width="190" x="910" y="830" as="geometry" />
         </mxCell>
-        <mxCell id="e1" edge="1" parent="1" source="c_in" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;" target="c_pre">
+        <mxCell id="c_rollback" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" value="model_rollback&#xa;배포 직전 자동백업 / 복원" vertex="1">
+          <mxGeometry height="50" width="190" x="1120" y="830" as="geometry" />
+        </mxCell>
+        <mxCell id="c_log" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" value="로깅: 백그라운드 작업&#xa;→ spam_detector.log 자동기록" vertex="1">
+          <mxGeometry height="50" width="300" x="1140" y="940" as="geometry" />
+        </mxCell>
+
+        <!-- 수동 학습 파이프라인 -->
+        <mxCell id="c_tdata" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="학습 데이터&#xa;실(지자체·우체국) + 합성, 한/영" vertex="1">
+          <mxGeometry height="50" width="190" x="40" y="950" as="geometry" />
+        </mxCell>
+        <mxCell id="c_tbuild" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="build_dataset(ko/en)&#xa;→ spam.csv / spam_en.csv" vertex="1">
+          <mxGeometry height="50" width="190" x="250" y="950" as="geometry" />
+        </mxCell>
+        <mxCell id="c_ttrain" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="train(ko/en)&#xa;(+ user_reports 피드백)" vertex="1">
+          <mxGeometry height="50" width="210" x="460" y="950" as="geometry" />
+        </mxCell>
+
+        <!-- ===== 엣지 ===== -->
+
+        <!-- 입력 -> 라우팅 -->
+        <mxCell id="e1" edge="1" parent="1" source="c_in_manual" target="c_route" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.25;entryY=0;entryDx=0;entryDy=0;">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e2" edge="1" parent="1" source="c_pre" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;" target="c_model">
+        <mxCell id="e2" edge="1" parent="1" source="c_in_gmail" target="c_route" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.75;entryY=0;entryDx=0;entryDy=0;">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e3" edge="1" parent="1" source="c_model" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;" target="c_decide">
+
+        <!-- 라우팅 -> 전처리(한/영) -->
+        <mxCell id="e3" edge="1" parent="1" source="c_route" target="c_pre_ko" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;exitX=0.3;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e4" edge="1" parent="1" source="c_rule" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;dashed=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="c_decide" value="override">
-          <mxGeometry relative="1" as="geometry">
-            <mxPoint x="459" y="161" as="sourcePoint" />
-            <mxPoint x="304" y="226" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="e5" edge="1" parent="1" source="c_decide" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;" target="c_dbh" value="저장">
+        <mxCell id="e4" edge="1" parent="1" source="c_route" target="c_pre_en" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;exitX=0.7;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e6" edge="1" parent="1" source="c_dbh" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;dashed=1;entryX=0.25;entryY=1;entryDx=0;entryDy=0;" target="c_app" value="조회">
+
+        <!-- 전처리 -> 모델 -->
+        <mxCell id="e5" edge="1" parent="1" source="c_pre_ko" target="c_model_ko" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e7" edge="1" parent="1" source="c_app" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;" target="c_gact">
+        <mxCell id="e6" edge="1" parent="1" source="c_pre_en" target="c_model_en" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e8" edge="1" parent="1" source="c_gact" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;dashed=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" target="c_tdata" value="actioned">
+
+        <!-- 규칙 override -->
+        <mxCell id="e7" edge="1" parent="1" source="c_rule" target="c_decide" value="override" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;dashed=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- 모델 -> 판정 -->
+        <mxCell id="e8" edge="1" parent="1" source="c_model_ko" target="c_decide" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;exitX=0.3;exitY=1;exitDx=0;exitDy=0;entryX=0.3;entryY=0;entryDx=0;entryDy=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e9" edge="1" parent="1" source="c_model_en" target="c_decide" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;exitX=0.7;exitY=1;exitDx=0;exitDy=0;entryX=0.7;entryY=0;entryDx=0;entryDy=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- 판정 -> DB -->
+        <mxCell id="e10" edge="1" parent="1" source="c_decide" target="c_db" value="저장" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- DB -> 앱 -->
+        <mxCell id="e11" edge="1" parent="1" source="c_db" target="c_app" value="조회" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;dashed=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.3;entryDx=0;entryDy=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- 앱 -> Gmail 조치 -->
+        <mxCell id="e12" edge="1" parent="1" source="c_app" target="c_gact" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- user_reports -> 자동재학습 (트리거) -->
+        <mxCell id="e13" edge="1" parent="1" source="c_db3" target="c_auto" value="피드백 N건↑" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;dashed=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.16;entryY=0;entryDx=0;entryDy=0;">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="680" y="729" />
-              <mxPoint x="130" y="729" />
+              <mxPoint x="575" y="800" />
+              <mxPoint x="730" y="800" />
             </Array>
-            <mxPoint x="114" y="712" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="e9" edge="1" parent="1" source="c_db3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;dashed=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.25;entryY=0;entryDx=0;entryDy=0;" target="c_ttrain" value="피드백">
+
+        <!-- 자동재학습 체인 -->
+        <mxCell id="e14" edge="1" parent="1" source="c_auto" target="c_safety" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e15" edge="1" parent="1" source="c_safety" target="c_rollback" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- rollback -> 로깅 -->
+        <mxCell id="e16" edge="1" parent="1" source="c_rollback" target="c_log" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;dashed=1;exitX=0.7;exitY=1;exitDx=0;exitDy=0;entryX=0.4;entryY=0;entryDx=0;entryDy=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- 수동 학습 파이프라인 체인 -->
+        <mxCell id="e17" edge="1" parent="1" source="c_tdata" target="c_tbuild" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e18" edge="1" parent="1" source="c_tbuild" target="c_ttrain" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- 수동학습 -> 모델 배포 (한/영 모두 동일 적용) -->
+        <mxCell id="e19" edge="1" parent="1" source="c_ttrain" target="c_model_ko" value="재학습 배포 (ko/en 모두)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;dashed=1;exitX=0.19;exitY=0;exitDx=0;exitDy=0;entryX=0.15;entryY=1;entryDx=0;entryDy=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- 자동재학습 -> 모델 배포(핫리로드, 한/영 모두 동일 적용) -->
+        <mxCell id="e20" edge="1" parent="1" source="c_rollback" target="c_model_ko" value="자동배포 + 핫리로드 (ko/en 모두)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;dashed=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.1;entryY=1;entryDx=0;entryDy=0;">
           <mxGeometry relative="1" as="geometry">
-            <mxPoint x="456" y="632" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="1120" y="910" />
+              <mxPoint x="490" y="910" />
+            </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="e10" edge="1" parent="1" source="c_tdata" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;" target="c_tbuild">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e11" edge="1" parent="1" source="c_tbuild" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;" target="c_ttrain">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e12" edge="1" parent="1" source="c_ttrain" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;dashed=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.75;entryY=0;entryDx=0;entryDy=0;" target="c_model" value="재학습">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e13" edge="1" parent="1" source="c_ttrain" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;dashed=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;exitX=0.75;exitY=0;exitDx=0;exitDy=0;" target="c_db2" value="성능기록">
-          <mxGeometry relative="1" as="geometry">
-            <mxPoint x="627" y="613" as="sourcePoint" />
-          </mxGeometry>
-        </mxCell>
+
       </root>
     </mxGraphModel>
   </diagram>
